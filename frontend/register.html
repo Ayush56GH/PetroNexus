@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — PetroNexus Drilling Console</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body style="min-height: 100vh; display: flex; flex-direction: column;">
+
+  <header class="pn-topbar">
+    <a href="/" class="pn-brand">
+      <div class="pn-brand-logo">PN</div>
+      <span>PetroNexus</span>
+    </a>
+    <div>
+      <a href="/login.html" class="pn-btn"><i class="bi bi-box-arrow-in-right"></i> Already registered? Login</a>
+    </div>
+  </header>
+
+  <main style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+    <div class="pn-card" style="width: 100%; max-width: 480px; padding: 2rem;">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h4 style="color: #fff; font-weight: 700; margin-bottom: 0.25rem;">Drilling Engineer Registration</h4>
+        <span style="font-size: 0.8rem; color: var(--pn-text-muted);">Enroll as Operational Personnel for Oil India Limited</span>
+      </div>
+
+      <div id="errorAlert" class="alert alert-danger" style="display: none; font-size: 0.82rem;"></div>
+
+      <form id="registerForm">
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.8rem; color: var(--pn-text-dim);">FULL NAME</label>
+          <input type="text" id="fullName" class="pn-input w-100" placeholder="e.g. Ramesh Gogoi" required>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label" style="font-size: 0.8rem; color: var(--pn-text-dim);">EMPLOYEE ID</label>
+            <input type="text" id="employeeId" class="pn-input w-100" placeholder="OIL-DE-XXXX" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" style="font-size: 0.8rem; color: var(--pn-text-dim);">DEPARTMENT</label>
+            <input type="text" id="department" class="pn-input w-100" value="Drilling Operations" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.8rem; color: var(--pn-text-dim);">WORK EMAIL</label>
+          <input type="email" id="email" class="pn-input w-100" placeholder="engineer@oilindia.in" required>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label" style="font-size: 0.8rem; color: var(--pn-text-dim);">PASSWORD</label>
+            <input type="password" id="password" class="pn-input w-100" placeholder="••••••••" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" style="font-size: 0.8rem; color: var(--pn-text-dim);">CONFIRM PASSWORD</label>
+            <input type="password" id="confirmPassword" class="pn-input w-100" placeholder="••••••••" required>
+          </div>
+        </div>
+        <button type="submit" class="pn-btn pn-btn-primary w-100" style="padding: 0.65rem; margin-top: 0.5rem; justify-content: center;">
+          <i class="bi bi-person-check"></i> Register Drilling Engineer Account
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+</body>
+</html>

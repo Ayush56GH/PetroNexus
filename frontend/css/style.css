@@ -1,0 +1,649 @@
+/* ==========================================================================
+   PetroNexus — Industrial Oil & Gas Drilling Intelligence Console Theme
+   Design System: Deep Slate / Petroleum Dark / Cyber Cyan / Safety Amber
+   ========================================================================== */
+
+:root {
+  --pn-bg-base: #070a13;
+  --pn-bg-surface: #0e1526;
+  --pn-bg-surface-elevated: #162036;
+  --pn-bg-card: #111b30;
+  --pn-border-subtle: #1c2a47;
+  --pn-border-strong: #2a3d66;
+  --pn-border-focus: #0284c7;
+
+  --pn-text-main: #f1f5f9;
+  --pn-text-muted: #94a3b8;
+  --pn-text-dim: #64748b;
+
+  --pn-cyan-primary: #0284c7;
+  --pn-cyan-glow: rgba(2, 132, 199, 0.25);
+  --pn-emerald-success: #10b981;
+  --pn-amber-warning: #f59e0b;
+  --pn-rose-danger: #ef4444;
+  --pn-purple-accent: #8b5cf6;
+
+  --pn-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --pn-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --pn-transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--pn-bg-base);
+  color: var(--pn-text-main);
+  font-family: var(--pn-font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--pn-cyan-primary);
+  text-decoration: none;
+  transition: var(--pn-transition);
+}
+a:hover {
+  color: #38bdf8;
+}
+
+/* ==========================================================================
+   Custom Scrollbar
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--pn-bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pn-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pn-cyan-primary);
+}
+
+/* ==========================================================================
+   Top Navigation Console Bar
+   ========================================================================== */
+.pn-topbar {
+  background: rgba(14, 21, 38, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--pn-border-subtle);
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+}
+
+.pn-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #fff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pn-brand-logo {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #070a13;
+  box-shadow: 0 0 12px var(--pn-cyan-glow);
+}
+
+.pn-top-metrics {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.82rem;
+}
+
+.pn-metric-badge {
+  background: var(--pn-bg-surface-elevated);
+  border: 1px solid var(--pn-border-subtle);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pn-metric-label {
+  color: var(--pn-text-dim);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pn-metric-value {
+  font-family: var(--pn-font-mono);
+  font-weight: 700;
+  color: var(--pn-cyan-primary);
+}
+
+.pn-status-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pn-emerald-success);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.pn-live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--pn-emerald-success);
+  border-radius: 50%;
+  animation: pulse-live 1.8s infinite;
+}
+
+@keyframes pulse-live {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ==========================================================================
+   Secondary Navigation Bar
+   ========================================================================== */
+.pn-subnav {
+  background: var(--pn-bg-surface);
+  border-bottom: 1px solid var(--pn-border-subtle);
+  padding: 0.4rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pn-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+}
+
+.pn-nav-link {
+  color: var(--pn-text-muted);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: var(--pn-transition);
+}
+
+.pn-nav-link:hover, .pn-nav-link.active {
+  color: #fff;
+  background: var(--pn-bg-surface-elevated);
+  border: 1px solid var(--pn-border-subtle);
+}
+
+.pn-nav-link.active {
+  border-color: var(--pn-cyan-primary);
+  color: var(--pn-cyan-primary);
+}
+
+/* ==========================================================================
+   Card & Panel Containers
+   ========================================================================== */
+.pn-card {
+  background: var(--pn-bg-card);
+  border: 1px solid var(--pn-border-subtle);
+  border-radius: 8px;
+  padding: 1rem;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  margin-bottom: 1rem;
+}
+
+.pn-card:hover {
+  border-color: var(--pn-border-strong);
+}
+
+.pn-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--pn-border-subtle);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.pn-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.pn-card-badge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Four-Panel Command Center Layout (Section 59)
+   ========================================================================== */
+.pn-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  min-height: calc(100vh - 110px);
+}
+
+@media (max-width: 1200px) {
+  .pn-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pn-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+}
+
+/* ==========================================================================
+   Map Styling
+   ========================================================================== */
+#map {
+  width: 100%;
+  height: 380px;
+  border-radius: 6px;
+  border: 1px solid var(--pn-border-subtle);
+  background: #060911;
+}
+
+.leaflet-container {
+  background-color: #0b0f19 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--pn-bg-card) !important;
+  color: var(--pn-text-main) !important;
+  border: 1px solid var(--pn-border-strong) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--pn-bg-card) !important;
+}
+
+/* ==========================================================================
+   Telemetry Gauges & Values
+   ========================================================================== */
+.pn-gauge-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .pn-gauge-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pn-gauge-card {
+  background: var(--pn-bg-surface-elevated);
+  border: 1px solid var(--pn-border-subtle);
+  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.pn-gauge-title {
+  font-size: 0.72rem;
+  color: var(--pn-text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pn-gauge-val {
+  font-family: var(--pn-font-mono);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.2rem 0;
+}
+
+.pn-gauge-unit {
+  font-size: 0.68rem;
+  color: var(--pn-text-dim);
+}
+
+/* ==========================================================================
+   Subsurface Memory Stratigraphic Column (Section 20)
+   ========================================================================== */
+.pn-strat-column {
+  position: relative;
+  background: #080d1a;
+  border: 1px solid var(--pn-border-subtle);
+  border-radius: 6px;
+  padding: 0.5rem;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.pn-formation-block {
+  border-left: 4px solid var(--pn-cyan-primary);
+  background: var(--pn-bg-surface);
+  border-radius: 0 4px 4px 0;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  transition: var(--pn-transition);
+}
+
+.pn-formation-block:hover {
+  background: var(--pn-bg-surface-elevated);
+}
+
+.pn-formation-block.active-formation {
+  border-left-color: var(--pn-amber-warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.pn-active-bit-marker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--pn-amber-warning);
+  color: #070a13;
+  font-weight: 800;
+  font-family: var(--pn-font-mono);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  margin: 0.4rem 0;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.pn-event-pin {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.3rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* ==========================================================================
+   Alerts & Evidence Styling
+   ========================================================================== */
+.pn-alert-item {
+  border-left: 4px solid var(--pn-rose-danger);
+  background: var(--pn-bg-surface-elevated);
+  border-radius: 0 6px 6px 0;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-top: 1px solid var(--pn-border-subtle);
+  border-right: 1px solid var(--pn-border-subtle);
+  border-bottom: 1px solid var(--pn-border-subtle);
+}
+
+.pn-alert-item.severity-HIGH {
+  border-left-color: var(--pn-rose-danger);
+}
+.pn-alert-item.severity-MODERATE {
+  border-left-color: var(--pn-amber-warning);
+}
+.pn-alert-item.severity-LOW {
+  border-left-color: var(--pn-cyan-primary);
+}
+
+.pn-alert-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #fff;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pn-alert-desc {
+  font-size: 0.82rem;
+  color: var(--pn-text-muted);
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.pn-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ==========================================================================
+   Buttons & Inputs
+   ========================================================================== */
+.pn-btn {
+  background: var(--pn-bg-surface-elevated);
+  color: var(--pn-text-main);
+  border: 1px solid var(--pn-border-strong);
+  padding: 0.45rem 0.9rem;
+  border-radius: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--pn-transition);
+}
+
+.pn-btn:hover {
+  background: var(--pn-border-strong);
+  color: #fff;
+}
+
+.pn-btn-primary {
+  background: var(--pn-cyan-primary);
+  border-color: #0284c7;
+  color: #fff;
+}
+.pn-btn-primary:hover {
+  background: #0369a1;
+  color: #fff;
+}
+
+.pn-btn-danger {
+  background: var(--pn-rose-danger);
+  border-color: #dc2626;
+  color: #fff;
+}
+.pn-btn-danger:hover {
+  background: #b91c1c;
+}
+
+.pn-btn-success {
+  background: var(--pn-emerald-success);
+  border-color: #059669;
+  color: #070a13;
+  font-weight: 700;
+}
+.pn-btn-success:hover {
+  background: #047857;
+  color: #fff;
+}
+
+.pn-btn-sm {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+.pn-input, .pn-select {
+  background: var(--pn-bg-base);
+  border: 1px solid var(--pn-border-strong);
+  color: #fff;
+  padding: 0.45rem 0.75rem;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: var(--pn-transition);
+}
+
+.pn-input:focus, .pn-select:focus {
+  border-color: var(--pn-cyan-primary);
+  box-shadow: 0 0 0 2px var(--pn-cyan-glow);
+}
+
+/* ==========================================================================
+   Modal Dialogs (Evidence Trail, Open Source)
+   ========================================================================== */
+.pn-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(7, 10, 19, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.pn-modal-dialog {
+  background: var(--pn-bg-card);
+  border: 1px solid var(--pn-border-strong);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+.pn-modal-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--pn-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pn-modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.pn-modal-footer {
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid var(--pn-border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* ==========================================================================
+   Decision Trace Timeline (Section 48)
+   ========================================================================== */
+.pn-trace-step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.pn-trace-node {
+  width: 28px;
+  height: 28px;
+  background: var(--pn-cyan-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pn-trace-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 28px;
+  left: 14px;
+  bottom: -1rem;
+  width: 2px;
+  background: var(--pn-border-strong);
+}
+
+/* ==========================================================================
+   Data Completeness Readiness Meter (Section 8)
+   ========================================================================== */
+.pn-readiness-bar {
+  background: var(--pn-bg-base);
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.pn-readiness-fill {
+  background: linear-gradient(90deg, #0284c7, #10b981);
+  height: 100%;
+  transition: width 0.8s ease;
+}
+
+/* Disclaimer Banner */
+.pn-disclaimer-banner {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fde68a;
+  padding: 0.4rem 1rem;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+}

@@ -1,0 +1,36 @@
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment Variables & Secrets
+.env
+.env.local
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Databases & local state
+*.sqlite3
+*.db-journal
+
+# Runtime Generated Reports & Uploads
+reports/*.pdf
+uploads/*
+!reports/.gitkeep
+!uploads/.gitkeep
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

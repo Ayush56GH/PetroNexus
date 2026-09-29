@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Intelligence — PetroNexus</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header class="pn-topbar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/dashboard.html" class="pn-brand">
+        <div class="pn-brand-logo">PN</div>
+        <span>PetroNexus</span>
+      </a>
+      <span style="color: var(--pn-text-muted); font-size: 0.85rem;">Document Intelligence & Auditable Sources (Section 37, 38, 39)</span>
+    </div>
+    <div>
+      <a href="/dashboard.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-speedometer2"></i> Command Center</a>
+    </div>
+  </header>
+
+  <nav class="pn-subnav">
+    <div class="pn-nav-links">
+      <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
+      <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
+      <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
+      <a href="/documents.html" class="pn-nav-link active"><i class="bi bi-file-earmark-text"></i> Documents</a>
+      <a href="/assistant.html" class="pn-nav-link"><i class="bi bi-chat-dots"></i> AI Assistant</a>
+      <a href="/scenario.html" class="pn-nav-link"><i class="bi bi-sliders"></i> Scenario / What-If</a>
+      <a href="/data-quality.html" class="pn-nav-link"><i class="bi bi-check2-circle"></i> Data Readiness</a>
+      <a href="/reports.html" class="pn-nav-link"><i class="bi bi-file-earmark-pdf"></i> Reports & Context Pack</a>
+    </div>
+  </nav>
+
+  <main class="container-fluid" style="padding: 1.5rem;">
+    <div class="row g-4">
+
+      <!-- Document List -->
+      <div class="col-lg-5">
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h3 class="pn-card-title">
+              <i class="bi bi-folder2-open" style="color: var(--pn-cyan-primary);"></i>
+              Indexed Historical Documents (Section 37)
+            </h3>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 0.75rem;">
+            PyMuPDF parsed documents with table extraction and page segmentation:
+          </p>
+          <div id="documentsList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Document Page & Table Viewer (Section 38 & 39) -->
+      <div class="col-lg-7">
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h3 class="pn-card-title">
+              <i class="bi bi-file-earmark-text" style="color: var(--pn-emerald-success);"></i>
+              <span id="docViewerTitle">Document Page Viewer</span>
+            </h3>
+            <span id="docViewerPageBadge" class="pn-card-badge" style="background: rgba(2, 132, 199, 0.15); color: #38bdf8;">Select Page</span>
+          </div>
+
+          <div id="docViewerPlaceholder" style="padding: 3rem 1.5rem; text-align: center; color: var(--pn-text-dim);">
+            <i class="bi bi-file-text" style="font-size: 2.5rem; color: var(--pn-border-strong);"></i>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem;">Select a document and page from the left to view extracted text and structured tables.</p>
+          </div>
+
+          <div id="docViewerContent" style="display: none;">
+            <div style="display: flex; gap: 0.4rem; overflow-x: auto; margin-bottom: 1rem;" id="docPageChips"></div>
+            <div style="background: var(--pn-bg-surface); border: 1px solid var(--pn-border-subtle); border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+              <h6 style="color: #fff; font-size: 0.85rem; margin-bottom: 0.5rem;">Extracted Page Text:</h6>
+              <div id="docExtractedText" style="font-size: 0.82rem; color: var(--pn-text-main); font-family: var(--pn-font-mono); white-space: pre-wrap; line-height: 1.5; max-height: 300px; overflow-y: auto;"></div>
+            </div>
+            <div id="docTablesSection"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script>
+    let activeDocId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadDocuments();
+    });
+
+    async function loadDocuments() {
+      try {
+        const docs = await PetroNexusAPI.getDocuments();
+        const container = document.getElementById('documentsList');
+
+        container.innerHTML = docs.map(d => `
+          <div style="background: var(--pn-bg-surface); border: 1px solid var(--pn-border-subtle); padding: 0.75rem; border-radius: 6px; margin-bottom: 0.6rem; cursor: pointer;" onclick="selectDocument(${d.id})">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <b style="color: #fff; font-size: 0.88rem;">${d.title}</b>
+              <span class="pn-card-badge" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8;">${d.document_type}</span>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--pn-text-muted);">
+              File: ${d.file_name} • Pages: ${d.page_count}
+            </div>
+          </div>
+        `).join('') || '<div style="color: var(--pn-text-dim);">No documents found.</div>';
+
+        // Auto-select WCR-018 if available
+        if (docs.length > 0) {
+          selectDocument(docs[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to load documents:', err);
+      }
+    }
+
+    async function selectDocument(docId) {
+      activeDocId = docId;
+      try {
+        const detail = await PetroNexusAPI.getDocumentDetail(docId);
+        document.getElementById('docViewerPlaceholder').style.display = 'none';
+        document.getElementById('docViewerContent').style.display = 'block';
+        document.getElementById('docViewerTitle').textContent = detail.title;
+
+        // Render page chips
+        const chipsContainer = document.getElementById('docPageChips');
+        chipsContainer.innerHTML = detail.pages.map(p => `
+          <button class="pn-btn pn-btn-sm ${p.page_number === 37 || p.page_number === 22 ? 'pn-btn-primary' : ''}" onclick="selectPage(${docId}, ${p.page_number})">
+            Page ${p.page_number} ${p.page_number === 37 ? '⚠ Loss Zone' : ''} ${p.page_number === 22 ? '⚠ Torque' : ''}
+          </button>
+        `).join('');
+
+        // Select page 37 if available, otherwise first page
+        const targetPage = detail.pages.find(p => p.page_number === 37) ? 37 : 1;
+        selectPage(docId, targetPage);
+      } catch (err) {
+        alert(`Failed to load document: ${err.message}`);
+      }
+    }
+
+    async function selectPage(docId, pageNum) {
+      try {
+        const page = await PetroNexusAPI.getDocumentPage(docId, pageNum);
+        document.getElementById('docViewerPageBadge').textContent = `Page ${pageNum}`;
+        document.getElementById('docExtractedText').textContent = page.extracted_text;
+
+        // Render extracted structured tables (Section 38)
+        const tablesSec = document.getElementById('docTablesSection');
+        if (page.structured_tables && page.structured_tables.length > 0) {
+          tablesSec.innerHTML = page.structured_tables.map(t => `
+            <div style="background: var(--pn-bg-surface); border: 1px solid var(--pn-border-subtle); border-radius: 6px; padding: 0.75rem; margin-top: 0.75rem;">
+              <h6 style="color: #38bdf8; font-size: 0.8rem; margin-bottom: 0.4rem;">Structured Table Extracted: ${t.title || 'Table'}</h6>
+              <div class="table-responsive">
+                <table class="table table-dark table-sm" style="font-size: 0.78rem;">
+                  <thead>
+                    <tr>${t.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                  </thead>
+                  <tbody>
+                    ${t.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          tablesSec.innerHTML = '';
+        }
+      } catch (err) {
+        console.error('Failed to load page:', err);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Context Pack — PetroNexus</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header class="pn-topbar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/dashboard.html" class="pn-brand">
+        <div class="pn-brand-logo">PN</div>
+        <span>PetroNexus</span>
+      </a>
+      <span style="color: var(--pn-text-muted); font-size: 0.85rem;">Engineering Reports & Context Packs (Section 50 & 68)</span>
+    </div>
+    <div>
+      <a href="/dashboard.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-speedometer2"></i> Command Center</a>
+    </div>
+  </header>
+
+  <nav class="pn-subnav">
+    <div class="pn-nav-links">
+      <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
+      <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
+      <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
+      <a href="/documents.html" class="pn-nav-link"><i class="bi bi-file-earmark-text"></i> Documents</a>
+      <a href="/assistant.html" class="pn-nav-link"><i class="bi bi-chat-dots"></i> AI Assistant</a>
+      <a href="/scenario.html" class="pn-nav-link"><i class="bi bi-sliders"></i> Scenario / What-If</a>
+      <a href="/data-quality.html" class="pn-nav-link"><i class="bi bi-check2-circle"></i> Data Readiness</a>
+      <a href="/reports.html" class="pn-nav-link active"><i class="bi bi-file-earmark-pdf"></i> Reports & Context Pack</a>
+    </div>
+  </nav>
+
+  <main class="container" style="max-width: 960px; padding: 2rem 1.5rem;">
+    <!-- Context Pack Generator (Section 50) -->
+    <div class="pn-card" style="margin-bottom: 2rem;">
+      <div class="pn-card-header">
+        <h3 class="pn-card-title">
+          <i class="bi bi-file-earmark-zip" style="color: var(--pn-cyan-primary);"></i>
+          Active Well Engineering Context Pack (Section 50)
+        </h3>
+        <span class="pn-card-badge" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8;">ONE-CLICK EXPORT</span>
+      </div>
+
+      <p style="font-size: 0.88rem; color: var(--pn-text-muted); line-height: 1.55; margin-bottom: 1rem;">
+        Assembles all active well parameters, formation context, comparable offset wells, upcoming look-ahead hazards, documented mitigations, memory gaps, and source document citations into an auditable dossier.
+      </p>
+
+      <button id="btnGenerateContextPack" class="pn-btn pn-btn-primary" style="padding: 0.65rem 1.25rem;">
+        <span id="packSpinner" class="spinner-border spinner-border-sm" style="display: none;" role="status"></span>
+        <i class="bi bi-file-earmark-pdf"></i> Generate Current Well Context Pack (PDF & JSON)
+      </button>
+
+      <div id="packResultContainer" style="display: none; margin-top: 1.25rem; background: var(--pn-bg-surface); border: 1px solid var(--pn-border-strong); border-radius: 6px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <b style="color: #fff; font-size: 0.95rem;">Context Pack Successfully Generated!</b>
+          <span id="packGenTime" style="font-size: 0.78rem; color: var(--pn-text-dim);"></span>
+        </div>
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+          <a id="packPdfLink" href="#" target="_blank" class="pn-btn pn-btn-success">
+            <i class="bi bi-download"></i> Download Printable PDF Dossier
+          </a>
+        </div>
+        <h6 style="color: var(--pn-text-dim); font-size: 0.78rem; text-transform: uppercase; margin-bottom: 0.3rem;">Raw Structured JSON Preview:</h6>
+        <pre id="packJsonPreview" style="background: var(--pn-bg-base); color: #38bdf8; padding: 0.75rem; border-radius: 4px; font-size: 0.75rem; max-height: 250px; overflow-y: auto;"></pre>
+      </div>
+    </div>
+
+    <!-- Pre-Interval Brief (Section 47) -->
+    <div class="pn-card">
+      <div class="pn-card-header">
+        <h3 class="pn-card-title">
+          <i class="bi bi-card-checklist" style="color: var(--pn-amber-warning);"></i>
+          Pre-Interval Brief (Section 47)
+        </h3>
+        <span class="pn-card-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">OPERATIONAL BRIEFING</span>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <span style="font-size: 0.72rem; color: var(--pn-text-dim);">WELL:</span><br/>
+          <b style="color: #fff;" id="pibWellName">OIL-DEMO-023</b>
+        </div>
+        <div class="col-md-3">
+          <span style="font-size: 0.72rem; color: var(--pn-text-dim);">CURRENT DEPTH:</span><br/>
+          <b style="color: var(--pn-cyan-primary);" id="pibDepth">2846.0 m</b>
+        </div>
+        <div class="col-md-3">
+          <span style="font-size: 0.72rem; color: var(--pn-text-dim);">UPCOMING INTERVAL:</span><br/>
+          <b style="color: #fca5a5;" id="pibInterval">2846–2921 m</b>
+        </div>
+        <div class="col-md-3">
+          <span style="font-size: 0.72rem; color: var(--pn-text-dim);">FORMATION:</span><br/>
+          <b style="color: #fff;" id="pibFormation">Formation-X</b>
+        </div>
+      </div>
+
+      <div style="background: var(--pn-bg-surface); padding: 1rem; border-radius: 6px; border-left: 4px solid var(--pn-amber-warning); margin-bottom: 1rem;">
+        <h6 style="color: #fff; font-size: 0.85rem; margin-bottom: 0.4rem;">Most Comparable Offset Well Reference:</h6>
+        <div id="pibComparableWell" style="font-size: 0.82rem;"></div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <h6 style="color: #fff; font-size: 0.82rem; margin-bottom: 0.3rem;">Historical Mitigations Documented:</h6>
+        <ul id="pibMitigationsList" style="font-size: 0.82rem; color: var(--pn-text-muted); padding-left: 1.25rem;"></ul>
+      </div>
+
+      <div>
+        <h6 style="color: #fff; font-size: 0.82rem; margin-bottom: 0.3rem;">Verified Source Evidence:</h6>
+        <div id="pibSourcesList"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/reports.js"></script>
+</body>
+</html>

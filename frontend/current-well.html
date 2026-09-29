@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Well Intelligence Ingestion — PetroNexus</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="pn-topbar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/dashboard.html" class="pn-brand">
+        <div class="pn-brand-logo">PN</div>
+        <span>PetroNexus</span>
+      </a>
+    </div>
+    <div class="pn-top-metrics">
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">FEATURE:</span>
+        <span class="pn-metric-value" style="color: #38bdf8;">Current Well Intelligence Ingestion</span>
+      </div>
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">READINESS:</span>
+        <span class="pn-metric-value" id="readinessScoreVal" style="color: var(--pn-emerald-success);">82%</span>
+      </div>
+    </div>
+    <div>
+      <a href="/dashboard.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-speedometer2"></i> Command Center</a>
+    </div>
+  </header>
+
+  <!-- Subnav -->
+  <nav class="pn-subnav">
+    <div class="pn-nav-links">
+      <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
+      <a href="/current-well.html" class="pn-nav-link active"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
+      <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
+      <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
+      <a href="/documents.html" class="pn-nav-link"><i class="bi bi-file-earmark-text"></i> Documents</a>
+      <a href="/assistant.html" class="pn-nav-link"><i class="bi bi-chat-dots"></i> AI Assistant</a>
+      <a href="/scenario.html" class="pn-nav-link"><i class="bi bi-sliders"></i> Scenario / What-If</a>
+      <a href="/data-quality.html" class="pn-nav-link"><i class="bi bi-check2-circle"></i> Data Readiness</a>
+      <a href="/reports.html" class="pn-nav-link"><i class="bi bi-file-earmark-pdf"></i> Reports & Context Pack</a>
+    </div>
+  </nav>
+
+  <main class="container-fluid" style="padding: 1.5rem;">
+    <div class="row g-4">
+
+      <!-- Left Column: File Ingestion Dropzone & Extracted Profile -->
+      <div class="col-lg-6">
+
+        <!-- File Ingestion Card -->
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h3 class="pn-card-title">
+              <i class="bi bi-file-earmark-arrow-up" style="color: var(--pn-cyan-primary);"></i>
+              Upload Current Well Data
+            </h3>
+            <span style="font-size: 0.75rem; color: var(--pn-text-dim);">Formats: PDF, CSV, XLSX, LAS, TXT, JSON</span>
+          </div>
+
+          <div id="uploadAlert" style="display: none; font-size: 0.82rem; margin-bottom: 1rem;"></div>
+
+          <form id="wellUploadForm">
+            <div style="border: 2px dashed var(--pn-border-strong); border-radius: 8px; padding: 2rem 1.5rem; text-align: center; background: rgba(14, 21, 38, 0.4); margin-bottom: 1rem;">
+              <i class="bi bi-cloud-arrow-up" style="font-size: 2.5rem; color: var(--pn-cyan-primary);"></i>
+              <h6 style="color: #fff; margin-top: 0.75rem; margin-bottom: 0.25rem;">Drag & drop current well file here</h6>
+              <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 1rem;">
+                WCR, DDR, Mud log, Trajectory survey, Telemetry CSV, or LAS log
+              </p>
+              <input type="file" id="wellFileInput" class="form-control" style="max-width: 320px; margin: 0 auto; background: var(--pn-bg-base); color: #fff; border-color: var(--pn-border-strong);">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.78rem; color: var(--pn-text-dim);">
+                Target Well: <b style="color: #38bdf8;">OIL-DEMO-023</b>
+              </span>
+              <button type="submit" class="pn-btn pn-btn-primary">
+                <span id="uploadSpinner" class="spinner-border spinner-border-sm" style="display: none;" role="status"></span>
+                Analyze & Ingest Current Well Data
+              </button>
+            </div>
+          </form>
+
+          <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--pn-border-subtle); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="font-size: 0.75rem; color: var(--pn-text-dim);">One-Click Demo Ingest:</span>
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+              <button type="button" id="btnQuickPdf" class="pn-card-badge" style="cursor: pointer; background: rgba(2, 132, 199, 0.25); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">⚡ Ingest Report PDF</button>
+              <button type="button" id="btnQuickCsv" class="pn-card-badge" style="cursor: pointer; background: rgba(16, 185, 129, 0.25); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">⚡ Ingest Telemetry CSV</button>
+              <button type="button" id="btnQuickSurvey" class="pn-card-badge" style="cursor: pointer; background: rgba(139, 92, 246, 0.25); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.4);">⚡ Ingest Survey CSV</button>
+              <button type="button" id="btnQuickLas" class="pn-card-badge" style="cursor: pointer; background: rgba(245, 158, 11, 0.25); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">⚡ Ingest LAS Log</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Well Digital Profile -->
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h3 class="pn-card-title">
+              <i class="bi bi-person-badge" style="color: var(--pn-emerald-success);"></i>
+              Active Well Digital Profile
+            </h3>
+            <span class="pn-card-badge" style="background: var(--pn-emerald-success); color: #070a13; font-weight: 700;">PERSISTENT</span>
+          </div>
+
+          <div class="row g-2 mb-3" style="font-size: 0.85rem;">
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">WELL NAME</span><br/>
+              <b style="color: #fff;" id="profWellName">OIL-DEMO-023</b>
+            </div>
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">FIELD / BASIN</span><br/>
+              <span id="profField" style="color: #cbd5e1;">Duliajan Basin</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">OPERATOR</span><br/>
+              <span id="profOperator" style="color: #cbd5e1;">Oil India Limited</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">COORDINATES</span><br/>
+              <span id="profCoords" style="color: #cbd5e1; font-family: var(--pn-font-mono); font-size: 0.75rem;">27.352, 95.318</span>
+            </div>
+          </div>
+
+          <hr style="border-color: var(--pn-border-subtle); margin: 0.5rem 0;"/>
+
+          <div class="row g-2 mb-3" style="font-size: 0.85rem;">
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">CURRENT DEPTH</span><br/>
+              <b style="color: var(--pn-cyan-primary); font-family: var(--pn-font-mono);" id="profDepth">2846.0 m MD</b>
+            </div>
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">FORMATION</span><br/>
+              <b style="color: #fff;" id="profFormation">Formation-X</b>
+            </div>
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">STATUS</span><br/>
+              <span style="color: var(--pn-emerald-success); font-weight: 700;" id="profStatus">DRILLING_ACTIVE</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <span style="color: var(--pn-text-dim); font-size: 0.72rem;">WELL TYPE</span><br/>
+              <span id="profType" style="color: #cbd5e1;">DEVELOPMENT_DIRECTIONAL</span>
+            </div>
+          </div>
+
+          <h6 style="color: var(--pn-text-dim); font-size: 0.72rem; text-transform: uppercase; margin-bottom: 0.4rem;">Live Drilling Telemetry Ingested:</h6>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; font-size: 0.8rem; font-family: var(--pn-font-mono); background: var(--pn-bg-base); padding: 0.6rem; border-radius: 4px;">
+            <div><span style="color: var(--pn-text-dim);">ROP:</span> <span id="profRop" style="color: #38bdf8;">14.5 m/hr</span></div>
+            <div><span style="color: var(--pn-text-dim);">WOB:</span> <span id="profWob" style="color: #fff;">12.0 t</span></div>
+            <div><span style="color: var(--pn-text-dim);">RPM:</span> <span id="profRpm" style="color: #fff;">110</span></div>
+            <div><span style="color: var(--pn-text-dim);">TORQUE:</span> <span id="profTorque" style="color: #f59e0b;">16.8 kN.m</span></div>
+            <div><span style="color: var(--pn-text-dim);">ECD:</span> <span id="profEcd" style="color: #ef4444;">1.28 SG</span></div>
+            <div><span style="color: var(--pn-text-dim);">MW:</span> <span id="profMw" style="color: #10b981;">1.22 SG</span></div>
+            <div><span style="color: var(--pn-text-dim);">SPP:</span> <span id="profSpp" style="color: #fff;">2450 psi</span></div>
+            <div><span style="color: var(--pn-text-dim);">FLOW:</span> <span id="profFlow" style="color: #fff;">2150 LPM</span></div>
+          </div>
+
+          <h6 style="color: var(--pn-text-dim); font-size: 0.72rem; text-transform: uppercase; margin-top: 1rem; margin-bottom: 0.4rem;">Multi-Upload Session History (Section 54):</h6>
+          <div id="uploadSessionHistory">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Data Completeness Report & Next Best Actions -->
+      <div class="col-lg-6">
+
+        <!-- Readiness Score Card (Section 8) -->
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h3 class="pn-card-title">
+              <i class="bi bi-speedometer" style="color: var(--pn-emerald-success);"></i>
+              Well Intelligence Readiness
+            </h3>
+            <span style="font-size: 0.75rem; color: var(--pn-text-dim);">Completeness Metric</span>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: 700; color: #fff; font-size: 1.1rem;">Readiness Score:</span>
+            <span style="font-family: var(--pn-font-mono); font-size: 1.6rem; font-weight: 800; color: var(--pn-emerald-success);">
+              82%
+            </span>
+          </div>
+
+          <div class="pn-readiness-bar">
+            <div id="readinessMeterFill" class="pn-readiness-fill" style="width: 82%;"></div>
+          </div>
+          <p style="font-size: 0.78rem; color: var(--pn-text-dim); margin-bottom: 1rem;">
+            This is an operational data completeness score evaluating availability of critical well engineering inputs.
+          </p>
+
+          <h6 style="color: #fff; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem;">Dimension Breakdown:</h6>
+          <div id="readinessBreakdownGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 1.25rem;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- The System Tells What It Needs (Section 5) -->
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h3 class="pn-card-title">
+              <i class="bi bi-search" style="color: var(--pn-amber-warning);"></i>
+              Current Well Data Completeness Report
+            </h3>
+            <span class="pn-card-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">SECTION 5</span>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--pn-text-muted); margin-bottom: 0.85rem;">
+            PetroNexus needs the following information for deeper offset intelligence:
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <b style="color: var(--pn-rose-danger); font-size: 0.8rem; text-transform: uppercase;">1. Critical Missing Fields:</b>
+            <div id="criticalMissingList" style="margin-top: 0.3rem;"></div>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <b style="color: var(--pn-amber-warning); font-size: 0.8rem; text-transform: uppercase;">2. Recommended Missing Fields:</b>
+            <div id="recommendedMissingList" style="margin-top: 0.3rem;"></div>
+          </div>
+
+          <hr style="border-color: var(--pn-border-subtle);"/>
+
+          <!-- Next Best Data Actions (Section 9) -->
+          <div>
+            <h6 style="color: #fff; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem;">
+              <i class="bi bi-lightbulb" style="color: var(--pn-cyan-primary);"></i>
+              NEXT BEST DATA ACTIONS (Section 9)
+            </h6>
+            <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 0.6rem;">
+              To improve offset analysis accuracy and activate True Vertical Depth correlation, upload:
+            </p>
+            <div id="nextBestActionsList">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/current_well.js"></script>
+</body>
+</html>

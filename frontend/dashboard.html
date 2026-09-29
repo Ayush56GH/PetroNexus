@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drilling Command Center — PetroNexus</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Console Bar (Section 13) -->
+  <header class="pn-topbar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/dashboard.html" class="pn-brand">
+        <div class="pn-brand-logo">PN</div>
+        <span>PetroNexus</span>
+      </a>
+      <!-- Active Well Selector (Section 14) -->
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="pn-metric-label">ACTIVE WELL:</span>
+        <select id="activeWellSelect" class="pn-select" style="font-weight: 700; color: #38bdf8; min-width: 220px;">
+          <option value="23">OIL-DEMO-023</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Topbar Metrics -->
+    <div class="pn-top-metrics">
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">DEPTH:</span>
+        <span class="pn-metric-value" id="tbDepth">2846.0 m</span>
+      </div>
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">FORMATION:</span>
+        <span class="pn-metric-value" id="tbFormation" style="color: #fff;">Formation-X</span>
+      </div>
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">eRTMAC:</span>
+        <span class="pn-status-live"><span class="pn-live-dot"></span> LIVE</span>
+      </div>
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">READINESS:</span>
+        <span class="pn-metric-value" id="tbReadiness" style="color: var(--pn-emerald-success);">82%</span>
+      </div>
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">ALERTS:</span>
+        <span class="pn-metric-value" style="color: var(--pn-rose-danger);">3</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <a href="/assistant.html" class="pn-btn pn-btn-primary pn-btn-sm">
+        <i class="bi bi-robot"></i> AI Assistant
+      </a>
+      <span id="currentUserDisplay" style="font-size: 0.78rem; color: var(--pn-text-muted);">
+        Rajesh Baruah (DRILLING_ENGINEER)
+      </span>
+      <a href="#" id="logoutBtn" class="pn-btn pn-btn-sm" title="Logout">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Secondary Subnav -->
+  <nav class="pn-subnav">
+    <div class="pn-nav-links">
+      <a href="/dashboard.html" class="pn-nav-link active"><i class="bi bi-speedometer2"></i> Command Center</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
+      <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
+      <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
+      <a href="/documents.html" class="pn-nav-link"><i class="bi bi-file-earmark-text"></i> Documents</a>
+      <a href="/assistant.html" class="pn-nav-link"><i class="bi bi-chat-dots"></i> AI Assistant</a>
+      <a href="/scenario.html" class="pn-nav-link"><i class="bi bi-sliders"></i> Scenario / What-If</a>
+      <a href="/data-quality.html" class="pn-nav-link"><i class="bi bi-check2-circle"></i> Data Readiness</a>
+      <a href="/reports.html" class="pn-nav-link"><i class="bi bi-file-earmark-pdf"></i> Reports & Context Pack</a>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--pn-text-dim);">
+      Duliajan Greater Field Operations
+    </div>
+  </nav>
+
+  <!-- Real-Time Anomaly Banner (Flashes when telemetry spikes) -->
+  <div id="liveAnomalyBanner" class="alert alert-danger" style="display: none; margin: 0.5rem 1.25rem 0; border-radius: 6px; padding: 0.6rem 1rem;"></div>
+
+  <!-- Four-Panel Command Center Layout (Section 59) -->
+  <main class="pn-dashboard-grid">
+
+    <!-- PANEL 1: Spatial Intelligence (Map + Nearby Wells) -->
+    <section class="pn-card pn-panel">
+      <div class="pn-card-header">
+        <h3 class="pn-card-title">
+          <i class="bi bi-compass" style="color: var(--pn-cyan-primary);"></i>
+          Panel 1: Spatial Intelligence
+        </h3>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 0.75rem; color: var(--pn-text-dim);">Search Radius:</span>
+          <select id="searchRadiusSelect" class="pn-select" style="font-size: 0.78rem; padding: 0.2rem 0.5rem;">
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="15" selected>15 km</option>
+            <option value="25">25 km</option>
+            <option value="50">50 km</option>
+          </select>
+        </div>
+      </div>
+      <div id="map"></div>
+      <div style="margin-top: 0.6rem; display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--pn-text-dim);">
+        <span><span style="color: #0284c7;">●</span> Active Well: <b id="tbWellName">OIL-DEMO-023</b></span>
+        <span><span style="color: #ef4444;">●</span> Historical Hazard Offset</span>
+        <span><span style="color: #10b981;">●</span> Reference Offset</span>
+      </div>
+    </section>
+
+    <!-- PANEL 2: Live Drilling Telemetry (eRTMAC Simulator) -->
+    <section class="pn-card pn-panel">
+      <div class="pn-card-header">
+        <h3 class="pn-card-title">
+          <i class="bi bi-activity" style="color: var(--pn-emerald-success);"></i>
+          Panel 2: Live Drilling Telemetry
+        </h3>
+        <!-- eRTMAC Simulation Controls (Section 27) -->
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="font-size: 0.7rem; color: var(--pn-text-dim); margin-right: 0.2rem;">SIMULATED eRTMAC:</span>
+          <button id="btnStartSim" class="pn-btn pn-btn-sm pn-btn-success" title="Start Streaming">
+            <i class="bi bi-play-fill"></i> START
+          </button>
+          <button id="btnPauseSim" class="pn-btn pn-btn-sm" title="Pause Stream">
+            <i class="bi bi-pause-fill"></i> PAUSE
+          </button>
+          <button id="btnResetSim" class="pn-btn pn-btn-sm pn-btn-danger" title="Reset Bit">
+            <i class="bi bi-arrow-counterclockwise"></i> RESET
+          </button>
+        </div>
+      </div>
+
+      <!-- Digital Gauges Grid -->
+      <div class="pn-gauge-grid">
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">DEPTH (MD)</span>
+          <span class="pn-gauge-val" id="gDepth">2846.0 m</span>
+          <span class="pn-gauge-unit">Meters Measured</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">ROP</span>
+          <span class="pn-gauge-val" id="gRop" style="color: #0284c7;">14.5</span>
+          <span class="pn-gauge-unit">m / hr</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">TORQUE</span>
+          <span class="pn-gauge-val" id="gTorque" style="color: #f59e0b;">16.8</span>
+          <span class="pn-gauge-unit">kN.m</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">MSE (TEALE)</span>
+          <span class="pn-gauge-val" id="gMse" style="color: #a855f7;">210.0</span>
+          <span class="pn-gauge-unit">MPa</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">WOB</span>
+          <span class="pn-gauge-val" id="gWob">12.0</span>
+          <span class="pn-gauge-unit">Metric Tons</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">RPM</span>
+          <span class="pn-gauge-val" id="gRpm">110</span>
+          <span class="pn-gauge-unit">Rotary Rev/Min</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">ECD</span>
+          <span class="pn-gauge-val" id="gEcd" style="color: #ef4444;">1.280</span>
+          <span class="pn-gauge-unit">Specific Gravity</span>
+        </div>
+        <div class="pn-gauge-card">
+          <span class="pn-gauge-title">MUD WEIGHT</span>
+          <span class="pn-gauge-val" id="gMw" style="color: #10b981;">1.22</span>
+          <span class="pn-gauge-unit">Specific Gravity</span>
+        </div>
+      </div>
+
+      <!-- Real-Time Rolling Curves -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; flex: 1; min-height: 180px;">
+        <div style="background: #080d1a; border-radius: 6px; padding: 0.5rem; border: 1px solid var(--pn-border-subtle); position: relative;">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+        <div style="background: #080d1a; border-radius: 6px; padding: 0.5rem; border: 1px solid var(--pn-border-subtle); position: relative;">
+          <canvas id="ecdChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 3: Subsurface Memory (Stratigraphic Column + Moving Bit + Events) -->
+    <section class="pn-card pn-panel">
+      <div class="pn-card-header">
+        <h3 class="pn-card-title">
+          <i class="bi bi-layers-half" style="color: var(--pn-amber-warning);"></i>
+          Panel 3: Subsurface Memory
+        </h3>
+        <span style="font-size: 0.75rem; color: var(--pn-text-dim);">Live Bit Stratigraphic Tracking</span>
+      </div>
+      <div id="subsurfaceMemoryColumn" class="pn-strat-column">
+        <!-- Rendered dynamically by dashboard.js -->
+      </div>
+      <div style="margin-top: 0.75rem;">
+        <h6 style="color: #fff; font-size: 0.82rem; margin-bottom: 0.5rem;">OFFSET WELL MEMORY CARDS (Section 46):</h6>
+        <div id="offsetMemoryCardsContainer">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 4: Proactive Advisor (Alerts + Evidence + Mitigations + AI) -->
+    <section class="pn-card pn-panel">
+      <div class="pn-card-header">
+        <h3 class="pn-card-title">
+          <i class="bi bi-shield-exclamation" style="color: var(--pn-rose-danger);"></i>
+          Panel 4: Proactive Advisor
+        </h3>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="font-size: 0.75rem; color: var(--pn-text-dim);">Look-Ahead:</span>
+          <select id="lookaheadSelect" class="pn-select" style="font-size: 0.78rem; padding: 0.2rem 0.5rem;">
+            <option value="50">+50 m</option>
+            <option value="100">+100 m</option>
+            <option value="150" selected>+150 m</option>
+          </select>
+        </div>
+      </div>
+      <div id="proactiveAdvisorContent" style="flex: 1; overflow-y: auto;">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Global Modal for Evidence Trail, Decision Trace, Mitigation Playbook -->
+  <div id="globalModal" class="pn-modal-backdrop" style="display: none;">
+    <div class="pn-modal-dialog">
+      <div class="pn-modal-header">
+        <h5 id="globalModalTitle" style="color: #fff; font-weight: 700; margin: 0;">Modal Title</h5>
+        <button type="button" class="pn-btn pn-btn-sm" onclick="closeGlobalModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="globalModalBody" class="pn-modal-body"></div>
+      <div class="pn-modal-footer">
+        <button type="button" class="pn-btn" onclick="closeGlobalModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pn-disclaimer-banner">
+    <i class="bi bi-info-circle-fill"></i>
+    <span><b>DEMONSTRATION DATA:</b> Operating in high-fidelity simulated eRTMAC & synthetic offset knowledge mode for SIH26121.</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

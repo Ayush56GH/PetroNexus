@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # PetroNexus Application Server (FastAPI + Console Frontend + Simulated eRTMAC)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: petronexus_app
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=PetroNexus
+      - SECRET_KEY=petronexus-super-secure-production-ready-jwt-key-2026
+      - DATABASE_URL=sqlite:///./petronexus.db
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      - GROK_MODEL=grok-2-latest
+    volumes:
+      - ./uploads:/app/uploads
+      - ./reports:/app/reports
+    restart: unless-stopped
+
+  # Optional PostGIS Enterprise Subsurface Database
+  # To enable PostGIS mode, change DATABASE_URL in app service to:
+  # DATABASE_URL=postgresql+psycopg://petronexus:OilIndia2026@postgis:5432/petronexus_db
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: petronexus_postgis
+    environment:
+      POSTGRES_DB: petronexus_db
+      POSTGRES_USER: petronexus
+      POSTGRES_PASSWORD: OilIndia2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    profiles:
+      - enterprise-postgis
+    restart: unless-stopped
+
+volumes:
+  postgis_data:
