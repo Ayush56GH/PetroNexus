@@ -14,10 +14,20 @@ class Alert(Base):
     formation_name = Column(String(100), nullable=False)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
-    status = Column(String(50), default="ACTIVE") # ACTIVE, ACKNOWLEDGED, RESOLVED
+    status = Column(String(50), default="ACTIVE") # ACTIVE, ACKNOWLEDGED, DISMISSED, ESCALATED, RESOLVED
+    rule_id = Column(String(100), default="RULE_OFFSET_HAZARD")
+    what_happened = Column(Text, nullable=True)
+    why_it_matters = Column(Text, nullable=True)
+    historical_evidence_text = Column(Text, nullable=True)
+    current_indicator_text = Column(Text, nullable=True)
+    recommended_action = Column(Text, nullable=True)
+    engineer_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     acknowledged_at = Column(DateTime, nullable=True)
     acknowledged_by = Column(String(100), nullable=True)
+    dismissed_at = Column(DateTime, nullable=True)
+    escalated_at = Column(DateTime, nullable=True)
+    source_id = Column(Integer, ForeignKey("data_sources.id"), nullable=True)
 
     well = relationship("Well", back_populates="alerts")
     evidence_items = relationship("AlertEvidence", back_populates="alert", cascade="all, delete-orphan")

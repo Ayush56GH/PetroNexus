@@ -35,6 +35,9 @@ async function loadIntelligenceData() {
     renderDataConflicts(analysis.data_conflicts);
     renderMitigationPlaybook(analysis.mitigation_playbook);
 
+    await loadDepthHeatmap();
+    await loadFormationRiskProfiles();
+
   } catch (err) {
     console.error('Failed to load intelligence data:', err);
   }
@@ -154,4 +157,75 @@ function renderMitigationPlaybook(playbook) {
       </div>
     </div>
   `).join('');
+}
+
+// Section 80: Historical Hazard vs Depth Heatmap
+async function loadDepthHeatmap() {
+  const container = document.getElementById('depthHeatmapContainer');
+  if (!container) return;
+
+  try {
+    const res = await PetroNexusAPI.getDepthHeatmap(100);
+    const intervals = res.intervals || [];
+
+    if (intervals.length === 0) {
+      container.innerHTML = '<div class="text-center text-muted py-3">No historical depth hazard records found.</div>';
+      return;
+    }
+
+    const maxEvents = Math.max(...intervals.map(i => i.total_events || 0), 1);
+
+    container.innerHTML = intervals.map(item => {
+      const pct = Math.round((item.total_events / maxEvents) * 100);
+      const cats = Object.entries(item.categories || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
+      const barColor = item.total_events >= 3 ? '#ef4444' : item.total_events >= 2 ? '#f59e0b' : '#0284c7';
+
+      return `
+        <div style="margin-bottom: 0.65rem; background: #090d16; padding: 0.5rem 0.75rem; border-radius: 4px; border: 1px solid var(--pn-border-subtle);">
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem;">
+            <b style="color: #38bdf8; font-family: var(--pn-font-mono);">${item.depth_range}</b>
+            <span style="color: #fff; font-weight: 600;">${item.total_events} Hazard Event(s)</span>
+          </div>
+          <div style="height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; margin-bottom: 0.3rem;">
+            <div style="width: ${pct}%; height: 100%; background: ${barColor};"></div>
+          </div>
+          <div style="font-size: 0.7rem; color: #94a3b8;">
+            ${cats || 'Documented drilling occurrence'}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div class="text-danger small py-2">Failed to load depth heatmap: ${err.message}</div>`;
+  }
+}
+
+// Section 81: Formation Risk Profiles
+async function loadFormationRiskProfiles() {
+  const tbody = document.getElementById('formationRiskProfileTbody');
+  if (!tbody) return;
+
+  try {
+    const profiles = await PetroNexusAPI.getFormationRiskProfile();
+    if (!profiles || profiles.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No formation profile data available.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = profiles.map(p => {
+      const sevColor = p.highest_severity === 'CRITICAL' ? 'bg-danger' : p.highest_severity === 'HIGH' ? 'bg-danger' : 'bg-warning text-dark';
+      return `
+        <tr>
+          <td><b style="color: #fff;">${p.formation_name}</b></td>
+          <td style="font-family: var(--pn-font-mono); color: #38bdf8;">${p.event_count}</td>
+          <td>${p.wells_affected}</td>
+          <td style="font-family: var(--pn-font-mono);">${Math.round(p.average_depth_m)} m</td>
+          <td style="font-family: var(--pn-font-mono); color: #fca5a5;">${p.total_npt_hours.toFixed(1)} hrs</td>
+          <td><span class="badge ${sevColor}">${p.highest_severity}</span></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-danger small">Error: ${err.message}</td></tr>`;
+  }
 }

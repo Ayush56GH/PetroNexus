@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Ingestion & Provenance Center — PetroNexus</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .pn-provenance-real {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .pn-provenance-public {
+      background: rgba(2, 132, 199, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(2, 132, 199, 0.4);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .pn-provenance-user {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .pn-provenance-demo {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .mapping-table th {
+      background: #0f172a;
+      color: #94a3b8;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="pn-topbar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/dashboard.html" class="pn-brand">
+        <div class="pn-brand-logo">PN</div>
+        <span>PetroNexus</span>
+      </a>
+      <span style="font-family: var(--pn-font-mono); font-size: 0.82rem; color: #94a3b8;">
+        / DATA INGESTION & PROVENANCE REGISTRY
+      </span>
+    </div>
+
+    <div class="pn-top-metrics">
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">DATA PROVENANCE:</span>
+        <span class="pn-provenance-real" id="topProvenanceBadge">REAL DATA READY</span>
+      </div>
+      <div class="pn-metric-badge">
+        <span class="pn-metric-label">eRTMAC ADAPTER:</span>
+        <span id="topWitsmlStatus" style="font-family: var(--pn-font-mono); font-size: 0.75rem; color: #94a3b8;">STANDBY</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <a href="/dashboard.html" class="pn-btn pn-btn-sm"><i class="bi bi-speedometer2"></i> Dashboard</a>
+      <a href="/assistant.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-robot"></i> AI Assistant</a>
+    </div>
+  </header>
+
+  <!-- Subnav -->
+  <nav class="pn-subnav">
+    <div class="pn-nav-links">
+      <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
+      <a href="/data-import.html" class="pn-nav-link active"><i class="bi bi-cloud-arrow-up"></i> Data Sources & Import</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-geo-alt"></i> Active Well Profile</a>
+      <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
+      <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
+      <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
+      <a href="/documents.html" class="pn-nav-link"><i class="bi bi-file-earmark-text"></i> Documents</a>
+      <a href="/assistant.html" class="pn-nav-link"><i class="bi bi-chat-dots"></i> AI Assistant</a>
+      <a href="/scenario.html" class="pn-nav-link"><i class="bi bi-sliders"></i> Scenario / Replay</a>
+      <a href="/reports.html" class="pn-nav-link"><i class="bi bi-file-earmark-pdf"></i> Reports</a>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container-fluid" style="padding: 1.5rem 1.75rem 3rem;">
+
+    <!-- Alert / Toast Banner -->
+    <div id="statusAlert" class="alert" style="display: none; border-radius: 6px;"></div>
+
+    <div class="row g-4">
+
+      <!-- LEFT COLUMN: Real Data File Upload, Preview & Column Mapping -->
+      <div class="col-lg-7">
+        <div class="pn-card" style="height: 100%;">
+          <div class="pn-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="pn-card-title">
+              <i class="bi bi-upload" style="color: var(--pn-cyan-primary);"></i>
+              Real Industrial File Ingestion
+            </h3>
+            <span class="pn-provenance-user">USER UPLOAD PORTAL</span>
+          </div>
+
+          <!-- Step 1: Select Type & File -->
+          <div style="padding: 1rem 0; border-bottom: 1px solid var(--pn-border-subtle);">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="pn-metric-label">1. SELECT DATA CATEGORY:</label>
+                <select id="importCategorySelect" class="pn-select w-100">
+                  <option value="WELL_HEADER">1. Well Master Header (Coordinates, Depth, Operator)</option>
+                  <option value="WELL_TRAJECTORY">2. Well Trajectory / Directional Survey (MD, INC, AZI, TVD)</option>
+                  <option value="DRILLING_PARAMETERS">3. Drilling Parameters Log (ROP, WOB, RPM, Torque, SPP)</option>
+                  <option value="FORMATION_TOPS">4. Formation Tops & Stratigraphy (Tops, Bases, Lithology)</option>
+                  <option value="HISTORICAL_EVENTS">5. Historical Drilling Events & Hazards (Losses, Kicks, Stuck)</option>
+                  <option value="TELEMETRY">6. Real-Time Telemetry Stream Batch</option>
+                  <option value="PETROPHYSICAL_LAS">7. Petrophysical LAS Curve Log (LAS 2.0 / 3.0)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="pn-metric-label">2. CHOOSE SOURCE FILE (.CSV, .XLSX, .LAS, .JSON):</label>
+                <input type="file" id="fileInput" class="form-control" style="background: var(--pn-bg-dark); color: #fff; border-color: var(--pn-border-subtle); font-size: 0.85rem;" accept=".csv,.xlsx,.xls,.las,.json,.pdf">
+              </div>
+            </div>
+
+            <div style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center;">
+              <button id="btnPreview" class="pn-btn pn-btn-primary">
+                <i class="bi bi-eye"></i> Preview & Detect Columns
+              </button>
+              <span id="previewLoading" style="display: none; color: #38bdf8; font-size: 0.85rem;">
+                <span class="spinner-border spinner-border-sm"></span> Analyzing schema and validating curves...
+              </span>
+            </div>
+          </div>
+
+          <!-- Step 2: Interactive Field Mapping & Quality Preview -->
+          <div id="mappingSection" style="display: none; padding-top: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h5 style="color: #fff; font-size: 0.95rem; margin: 0;">
+                <i class="bi bi-bezier2" style="color: #38bdf8;"></i> Column Mapping & Unit Normalization
+              </h5>
+              <span id="detectedBadge" class="badge bg-secondary" style="font-family: var(--pn-font-mono);"></span>
+            </div>
+
+            <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 1rem;">
+              Confirm automatic field mappings from your uploaded columns to canonical PetroNexus subsurface schema.
+            </p>
+
+            <div style="max-height: 260px; overflow-y: auto; border: 1px solid var(--pn-border-subtle); border-radius: 6px; margin-bottom: 1rem;">
+              <table class="table table-dark table-sm mapping-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Source Column in File</th>
+                    <th>Maps to PetroNexus Target Field</th>
+                    <th>Sample Value</th>
+                  </tr>
+                </thead>
+                <tbody id="mappingTbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Preview Data Sample -->
+            <div style="margin-bottom: 1.25rem;">
+              <div class="pn-metric-label mb-1">DATA ROWS PREVIEW (FIRST 5 ROWS):</div>
+              <div id="dataPreviewBox" style="background: #090d16; border: 1px solid var(--pn-border-subtle); border-radius: 6px; padding: 0.5rem; max-height: 140px; overflow: auto; font-family: var(--pn-font-mono); font-size: 0.75rem; color: #94a3b8;"></div>
+            </div>
+
+            <!-- Commit Import Button -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(2, 132, 199, 0.08); padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid rgba(2, 132, 199, 0.3);">
+              <div>
+                <span style="font-weight: 700; color: #fff;">Ready to Ingest into Database</span>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Unit conversion & physical data quality checks applied automatically.</div>
+              </div>
+              <button id="btnCommitImport" class="pn-btn pn-btn-primary">
+                <i class="bi bi-check2-circle"></i> Ingest & Index Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Success Result Box -->
+          <div id="importSuccessBox" style="display: none; margin-top: 1.25rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: #34d399; font-weight: 700; margin-bottom: 0.5rem;">
+              <i class="bi bi-check-circle-fill"></i> Ingestion Successfully Completed!
+            </div>
+            <div id="successDetails" style="font-size: 0.85rem; color: #e2e8f0; line-height: 1.6;"></div>
+            <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+              <a href="/dashboard.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-map"></i> View on Spatial Map</a>
+              <a href="/wells.html" class="pn-btn pn-btn-sm"><i class="bi bi-table"></i> View in Basin Wells</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Data Provenance Registry & eRTMAC Connector -->
+      <div class="col-lg-5">
+        
+        <!-- eRTMAC / WITSML Connector Configuration Card -->
+        <div class="pn-card mb-4">
+          <div class="pn-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 class="pn-card-title" style="font-size: 1rem;">
+              <i class="bi bi-broadcast-pin" style="color: #38bdf8;"></i>
+              eRTMAC & WITSML Connector (SIH 26121)
+            </h4>
+            <span id="witsmlBadge" class="badge bg-secondary">STANDBY</span>
+          </div>
+
+          <div style="font-size: 0.82rem; color: var(--pn-text-muted); margin-bottom: 1rem; line-height: 1.5;">
+            Enterprise WITSML 1.4.1.1 / 2.0 connector for live Oil India eRTMAC telemetry streams.
+            <div style="font-size: 0.75rem; color: #f59e0b; margin-top: 0.35rem;">
+              <i class="bi bi-shield-exclamation"></i> Oil India corporate network credentials required for live rig telemetry. Standby mode active.
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12">
+              <label class="pn-metric-label">WITSML SERVER ENDPOINT URL:</label>
+              <input type="text" id="witsmlUrl" class="form-control form-control-sm" style="background: var(--pn-bg-dark); color: #fff; border-color: var(--pn-border-subtle); font-family: var(--pn-font-mono); font-size: 0.75rem;" value="https://ertmac.oilindia.in/witsml/1.4.1.1">
+            </div>
+            <div class="col-6">
+              <label class="pn-metric-label">USERNAME / CLIENT ID:</label>
+              <input type="text" id="witsmlUser" class="form-control form-control-sm" style="background: var(--pn-bg-dark); color: #fff; border-color: var(--pn-border-subtle); font-size: 0.78rem;" placeholder="oil_engineer">
+            </div>
+            <div class="col-6">
+              <label class="pn-metric-label">PASSWORD / ACCESS TOKEN:</label>
+              <input type="password" id="witsmlPass" class="form-control form-control-sm" style="background: var(--pn-bg-dark); color: #fff; border-color: var(--pn-border-subtle); font-size: 0.78rem;" placeholder="••••••••">
+            </div>
+            <div class="col-6">
+              <label class="pn-metric-label">WELL UID:</label>
+              <input type="text" id="witsmlWellUid" class="form-control form-control-sm" style="background: var(--pn-bg-dark); color: #fff; border-color: var(--pn-border-subtle); font-size: 0.78rem;" value="WELL-OIL-DEMO-023">
+            </div>
+            <div class="col-6">
+              <label class="pn-metric-label">POLLING INTERVAL (SEC):</label>
+              <input type="number" id="witsmlInterval" class="form-control form-control-sm" style="background: var(--pn-bg-dark); color: #fff; border-color: var(--pn-border-subtle); font-size: 0.78rem;" value="5" min="1" max="60">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+            <button id="btnConnectWitsml" class="pn-btn pn-btn-primary pn-btn-sm">
+              <i class="bi bi-link-45deg"></i> Test & Connect eRTMAC
+            </button>
+            <button id="btnDiscoverChannels" class="pn-btn pn-btn-sm">
+              <i class="bi bi-list-check"></i> Discover 21 Channels
+            </button>
+          </div>
+
+          <div id="witsmlStatusBox" style="margin-top: 0.85rem; font-family: var(--pn-font-mono); font-size: 0.75rem; color: #94a3b8; background: #090d16; padding: 0.5rem 0.75rem; border-radius: 4px; border: 1px solid var(--pn-border-subtle);">
+            Status: eRTMAC connector configured but not connected.<br/>
+            Last update: N/A • Log channels: 21 standard channels mapped
+          </div>
+        </div>
+
+        <!-- Data Provenance Registry Table -->
+        <div class="pn-card">
+          <div class="pn-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 class="pn-card-title" style="font-size: 1rem;">
+              <i class="bi bi-database-check" style="color: var(--pn-emerald-success);"></i>
+              Data Provenance Registry
+            </h4>
+            <span style="font-size: 0.75rem; color: var(--pn-text-dim);">SIH 26121 Requirement</span>
+          </div>
+
+          <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 0.85rem;">
+            Every dataset in PetroNexus carries transparent origin, license, confidence, and provenance tagging.
+          </p>
+
+          <div style="max-height: 320px; overflow-y: auto;">
+            <table class="table table-dark table-sm mb-0" style="font-size: 0.75rem;">
+              <thead>
+                <tr>
+                  <th>Source Name</th>
+                  <th>Classification</th>
+                  <th>Status</th>
+                  <th>Records</th>
+                </tr>
+              </thead>
+              <tbody id="provenanceTableBody">
+                <tr><td colspan="4" class="text-center text-muted">Loading registered sources...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Recent Ingestion Jobs History -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="pn-card">
+          <div class="pn-card-header">
+            <h4 class="pn-card-title" style="font-size: 1rem;">
+              <i class="bi bi-clock-history" style="color: #38bdf8;"></i>
+              Recent Ingestion Audit Log
+            </h4>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="table table-dark table-sm mb-0" style="font-size: 0.78rem;">
+              <thead>
+                <tr>
+                  <th>Job ID</th>
+                  <th>File Name</th>
+                  <th>Data Category</th>
+                  <th>Status</th>
+                  <th>Rows Processed</th>
+                  <th>Data Quality Score</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="jobsHistoryBody">
+                <tr><td colspan="7" class="text-center text-muted">Loading recent jobs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/data_import.js"></script>
+</body>
+</html>

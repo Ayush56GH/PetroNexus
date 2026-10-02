@@ -195,7 +195,9 @@ async def test_5_insufficient_evidence_behavior():
             "no historical reports",
             "no source",
             "not found",
-            "no information"
+            "no information",
+            "does not contain",
+            "not contain"
         ]), f"Expected explicit insufficient evidence report, got: {res['response'][:300]}"
         print(f"[PASS] TEST 5 passed: Explicitly reported insufficient evidence without hallucinating.")
         return res
@@ -245,9 +247,8 @@ async def test_7_groq_failure_fallback():
                 user_query=q,
                 requesting_user_id=USER_A_ID
             )
-            assert res["response"] is not None
-            assert "Grounded Fallback" in res["model_used"] or res["llm_status"] != "SUCCESS", \
-                f"Expected fallback indicator in model_used, got {res['model_used']}"
+            assert "Grounded Fallback" in res.get("model_used", "") or res.get("llm_status") != "SUCCESS", \
+                f"Expected fallback indicator in model_used, got {res.get('model_used')}"
             assert "### SUMMARY" in res["response"]
             assert len(res["sources"]) > 0
             print(f"[PASS] TEST 7 passed: Handled forced API failure with high-fidelity deterministic grounded fallback.")

@@ -26,7 +26,8 @@
   <nav class="pn-subnav">
     <div class="pn-nav-links">
       <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
-      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/data-import.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Data Sources & Ingestion</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-geo-alt"></i> Active Well Profile</a>
       <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
       <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
       <a href="/alerts.html" class="pn-nav-link active"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
@@ -43,10 +44,10 @@
       <div>
         <h3 class="pn-card-title">
           <i class="bi bi-exclamation-triangle-fill" style="color: var(--pn-rose-danger);"></i>
-          Operational & Offset Hazard Alert Center
+          Operational & Offset Hazard Alert Center (SIH 26121 Section 42 & 78)
         </h3>
         <span style="font-size: 0.8rem; color: var(--pn-text-muted);">
-          Evidence-grounded alerts triggered when active operations approach historically problematic depths or formations.
+          Deterministic, physics- and offset-grounded alerts with auditable engineering explanations and action tracking.
         </span>
       </div>
     </div>
@@ -55,6 +56,37 @@
       <!-- Populated dynamically -->
     </div>
   </main>
+
+  <!-- Engineer Action & Acknowledgement Modal (SIH 26121 Section 42) -->
+  <div id="engineerActionModal" class="pn-modal-backdrop" style="display: none;">
+    <div class="pn-modal-dialog">
+      <div class="pn-modal-header">
+        <h5 id="actionModalTitle" style="color: #fff; font-weight: 700; margin: 0;">Engineer Action & Decision Logging</h5>
+        <button type="button" class="pn-btn pn-btn-sm" onclick="closeActionModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="pn-modal-body">
+        <div style="font-size: 0.82rem; color: var(--pn-text-muted); margin-bottom: 1rem;">
+          Log operational actions, notes, and escalations directly into the immutable audit trail.
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.78rem; color: var(--pn-text-dim);">SELECT DECISION ACTION:</label>
+          <select id="actionSelect" class="form-select form-select-sm" style="background: #1e293b; color: #fff; border-color: var(--pn-border-subtle);">
+            <option value="ACKNOWLEDGED">ACKNOWLEDGE (Confirmed by Rig/Office Engineer)</option>
+            <option value="ESCALATED">ESCALATE (Escalate to Superintendent / Rig Manager)</option>
+            <option value="DISMISSED">DISMISS (False Alarm or Controlled Pre-planned Condition)</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.78rem; color: var(--pn-text-dim);">ENGINEER'S OPERATIONAL NOTE:</label>
+          <textarea id="engineerNoteInput" class="form-control" rows="3" style="background: #090d16; color: #fff; border-color: var(--pn-border-subtle); font-size: 0.82rem;" placeholder="e.g. Throttled flow to 1950 LPM, spotted 25 bbl medium LCM pill per offset well lesson..."></textarea>
+        </div>
+      </div>
+      <div class="pn-modal-footer">
+        <button type="button" class="pn-btn" onclick="closeActionModal()">Cancel</button>
+        <button type="button" id="btnSubmitAction" class="pn-btn pn-btn-primary">Submit to Audit Log</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Global Modal for Evidence Trail -->
   <div id="globalModal" class="pn-modal-backdrop" style="display: none;">

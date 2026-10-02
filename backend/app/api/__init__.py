@@ -9,6 +9,8 @@ from backend.app.api.ai import router as ai_router
 from backend.app.api.reports import router as reports_router
 from backend.app.api.quality import router as quality_router
 from backend.app.api.audit import router as audit_router
+from backend.app.api.data_sources import router as data_sources_router
+from backend.app.api.ingestion_routes import router as ingestion_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -21,3 +23,5 @@ api_router.include_router(ai_router)
 api_router.include_router(reports_router)
 api_router.include_router(quality_router)
 api_router.include_router(audit_router)
+api_router.include_router(data_sources_router)
+api_router.include_router(ingestion_router)

@@ -40,6 +40,7 @@ from tests.test_rag_pipeline import (
 )
 from tests.test_chat_memory import run_chat_memory_tests
 from tests.test_groq_integration import run_all_groq_tests
+from tests.test_sih26121_real_data_pipeline import run_all_real_data_pipeline_tests
 import asyncio
 
 def run_all():
@@ -47,52 +48,55 @@ def run_all():
     print("      PETRONEXUS AUTOMATED VERIFICATION TEST SUITE (SIH26121)")
     print("=" * 70)
 
-    print("\n[1/8] Running Supabase Authentication & Multi-User Identity Tests...")
+    print("\n[1/9] Running Supabase Authentication & Multi-User Identity Tests...")
     token_a = test_supabase_auth_login_user_a()
     token_b = test_supabase_auth_signup_user_b()
     test_multi_user_profile_isolation(token_a, token_b)
     test_invalid_token_rejected()
 
-    print("\n[2/8] Running Current Well Ingestion Tests...")
+    print("\n[2/9] Running Current Well Ingestion Tests...")
     test_pdf_extraction()
     test_csv_extraction()
     test_las_extraction()
     test_completeness_scoring()
     test_profile_merger()
 
-    print("\n[3/8] Running Spatial & Offset Intelligence Tests...")
+    print("\n[3/9] Running Spatial & Offset Intelligence Tests...")
     test_haversine_distance()
     test_nearby_wells()
     test_offset_relevance_engine()
     test_lookahead_corridor()
     test_memory_gaps_and_conflicts()
 
-    print("\n[4/8] Running Physics-Informed Indicators & MCM Trajectory Tests...")
+    print("\n[4/9] Running Physics-Informed Indicators & MCM Trajectory Tests...")
     test_mse_calculation()
     test_physics_evaluation()
     test_minimum_curvature_method()
     test_unit_conversions()
 
-    print("\n[5/8] Running Alerts, Evidence Trails & PDF Report Generation Tests...")
+    print("\n[5/9] Running Alerts, Evidence Trails & PDF Report Generation Tests...")
     test_alerts_and_evidence()
     test_pdf_report_generation()
     test_rag_assistant_grounded_response()
 
-    print("\n[6/8] Running Local Embeddings (bge-small-en-v1.5) & pgvector RAG Security Tests...")
+    print("\n[6/9] Running Local Embeddings (bge-small-en-v1.5) & pgvector RAG Security Tests...")
     test_embedding_dimensions()
     test_pgvector_similarity_search()
     setup_private_test_documents()
     test_cross_user_rag_isolation()
     test_prompt_injection_resistance()
 
-    print("\n[7/8] Running Multi-Turn Chat Memory & Conversation Isolation Tests...")
+    print("\n[7/9] Running Multi-Turn Chat Memory & Conversation Isolation Tests...")
     asyncio.run(run_chat_memory_tests())
 
-    print("\n[8/8] Running Groq LLM Integration & Security Verification Tests...")
+    print("\n[8/9] Running Groq LLM Integration & Security Verification Tests...")
     asyncio.run(run_all_groq_tests())
 
+    print("\n[9/9] Running SIH 26121 Real-Data Ingestion, Quality, OCR & Replay Tests...")
+    run_all_real_data_pipeline_tests()
+
     print("\n" + "=" * 70)
-    print("  ALL 34 TEST CASES PASSED WITH 100% SUCCESS ACROSS ALL 8 SUITES!")
+    print("  ALL 43 TEST CASES PASSED WITH 100% SUCCESS ACROSS ALL 9 SUITES!")
     print("=" * 70)
 
 if __name__ == "__main__":

@@ -47,7 +47,8 @@
   <nav class="pn-subnav">
     <div class="pn-nav-links">
       <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
-      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/data-import.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Data Sources & Ingestion</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-geo-alt"></i> Active Well Profile</a>
       <a href="/wells.html" class="pn-nav-link"><i class="bi bi-diagram-2"></i> Basin Wells</a>
       <a href="/intelligence.html" class="pn-nav-link active"><i class="bi bi-radar"></i> Offset Intelligence</a>
       <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
@@ -68,7 +69,7 @@
           <div class="pn-card-header">
             <h3 class="pn-card-title">
               <i class="bi bi-diagram-3" style="color: var(--pn-cyan-primary);"></i>
-              Multi-Factor Technical Offset Comparability Engine (Section 16)
+              Multi-Factor Technical Offset Comparability Engine (Section 16 & 21)
             </h3>
             <span class="pn-card-badge" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8;">7-DIMENSION MATCH</span>
           </div>
@@ -168,6 +169,62 @@
       </div>
 
     </div>
+
+    <!-- NEW ROW: Section 80 (Depth Heatmap) & Section 81 (Formation Risk Profiles) -->
+    <div class="row g-4 mt-2">
+      <!-- Section 80: Historical Risk vs Depth Heatmap -->
+      <div class="col-lg-6">
+        <div class="pn-card" style="height: 100%;">
+          <div class="pn-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="pn-card-title">
+              <i class="bi bi-bar-chart-steps" style="color: var(--pn-rose-danger);"></i>
+              Historical Hazard Density vs Depth Heatmap (Section 80)
+            </h3>
+            <span class="badge bg-secondary" style="font-size: 0.72rem;">100m Bins</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 0.75rem;">
+            Visual distribution of historical kicks, mud losses, stuck pipe, and pressure spikes by depth interval.
+          </p>
+          <div id="depthHeatmapContainer" style="max-height: 340px; overflow-y: auto;">
+            <div class="text-center text-muted py-4">Loading depth heatmap...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 81: Formation Risk Profile Table -->
+      <div class="col-lg-6">
+        <div class="pn-card" style="height: 100%;">
+          <div class="pn-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="pn-card-title">
+              <i class="bi bi-shield-shaded" style="color: var(--pn-amber-warning);"></i>
+              Formation Risk Profiles (Section 81)
+            </h3>
+            <span class="badge bg-secondary" style="font-size: 0.72rem;">Stratigraphic Units</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--pn-text-muted); margin-bottom: 0.75rem;">
+            Subsurface hazard profile aggregated across all regional offset wells by geological formation.
+          </p>
+          <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+            <table class="table table-dark table-sm table-hover" style="font-size: 0.78rem; margin: 0;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--pn-border-strong); color: #94a3b8;">
+                  <th>FORMATION</th>
+                  <th>EVENTS</th>
+                  <th>WELLS</th>
+                  <th>AVG DEPTH</th>
+                  <th>NPT (HRS)</th>
+                  <th>MAX SEVERITY</th>
+                </tr>
+              </thead>
+              <tbody id="formationRiskProfileTbody">
+                <tr><td colspan="6" class="text-center text-muted">Loading formation risk profiles...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script src="/static/js/api.js"></script>

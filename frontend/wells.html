@@ -18,9 +18,12 @@
       </a>
     </div>
     <div class="pn-top-metrics">
-      <span class="pn-status-live"><span class="pn-live-dot"></span> 25 Wells Loaded in Duliajan Basin</span>
+      <span class="pn-status-live" id="topWellCountBadge"><span class="pn-live-dot"></span> Loading wells...</span>
     </div>
-    <div>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/data-import.html" class="pn-btn pn-btn-sm" style="border: 1px solid var(--pn-border-subtle); color: #38bdf8;">
+        <i class="bi bi-cloud-arrow-up"></i> Ingest New Well Data
+      </a>
       <a href="/dashboard.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-speedometer2"></i> Command Center</a>
     </div>
   </header>
@@ -28,7 +31,8 @@
   <nav class="pn-subnav">
     <div class="pn-nav-links">
       <a href="/dashboard.html" class="pn-nav-link"><i class="bi bi-speedometer2"></i> Command Center</a>
-      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Active Well Ingestion</a>
+      <a href="/data-import.html" class="pn-nav-link"><i class="bi bi-cloud-arrow-up"></i> Data Sources & Ingestion</a>
+      <a href="/current-well.html" class="pn-nav-link"><i class="bi bi-geo-alt"></i> Active Well Profile</a>
       <a href="/wells.html" class="pn-nav-link active"><i class="bi bi-diagram-2"></i> Basin Wells</a>
       <a href="/intelligence.html" class="pn-nav-link"><i class="bi bi-radar"></i> Offset Intelligence</a>
       <a href="/alerts.html" class="pn-nav-link"><i class="bi bi-exclamation-triangle"></i> Alert Center</a>
@@ -45,18 +49,20 @@
       <div class="pn-card-header">
         <h3 class="pn-card-title">
           <i class="bi bi-grid-3x3" style="color: var(--pn-cyan-primary);"></i>
-          Oil India Limited — Duliajan Greater Basin Wells (25 Wells)
+          Oil India & Regional Basin Wells (<span id="titleWellCount">0</span> Wells Loaded)
         </h3>
         <div style="display: flex; gap: 0.5rem;">
-          <input type="text" id="wellSearchInput" class="pn-input" placeholder="Search well name or formation..." style="width: 250px;">
+          <input type="text" id="wellSearchInput" class="pn-input" placeholder="Search well name, formation, or operator..." style="width: 280px;">
+          <a href="/data-import.html" class="pn-btn pn-btn-primary pn-btn-sm"><i class="bi bi-plus-lg"></i> Import Data</a>
         </div>
       </div>
 
       <div class="table-responsive">
-        <table class="table table-dark table-hover" style="font-size: 0.85rem; margin: 0;">
+        <table class="table table-dark table-hover" style="font-size: 0.82rem; margin: 0;">
           <thead>
             <tr style="border-bottom: 2px solid var(--pn-border-strong); color: var(--pn-text-dim);">
               <th>WELL NAME</th>
+              <th>DATA PROVENANCE</th>
               <th>OPERATOR</th>
               <th>COORDINATES</th>
               <th>CURRENT DEPTH</th>
@@ -82,30 +88,51 @@
       const wells = await PetroNexusAPI.getWells();
       const tbody = document.getElementById('wellsTableBody');
       const search = document.getElementById('wellSearchInput');
+      const topCount = document.getElementById('topWellCountBadge');
+      const titleCount = document.getElementById('titleWellCount');
+
+      if (topCount) topCount.innerHTML = `<span class="pn-live-dot"></span> ${wells.length} Wells Loaded in Subsurface Registry`;
+      if (titleCount) titleCount.textContent = wells.length;
 
       function render(items) {
-        tbody.innerHTML = items.map(w => `
-          <tr>
-            <td><b style="color: #fff;">${w.well_name}</b> ${w.is_active_well ? '<span class="badge bg-primary">ACTIVE</span>' : ''}</td>
-            <td>${w.operator}</td>
-            <td style="font-family: var(--pn-font-mono);">${w.latitude.toFixed(4)}, ${w.longitude.toFixed(4)}</td>
-            <td style="font-family: var(--pn-font-mono); color: var(--pn-cyan-primary);">${w.current_depth_m} m</td>
-            <td style="font-family: var(--pn-font-mono);">${w.target_depth_m} m</td>
-            <td><span class="pn-card-badge" style="background: rgba(2,132,199,0.15); color: #38bdf8;">${w.current_formation}</span></td>
-            <td>${w.well_type}</td>
-            <td><span class="badge ${w.status === 'DRILLING_ACTIVE' ? 'bg-success' : 'bg-secondary'}">${w.status}</span></td>
-            <td>
-              <button class="pn-btn pn-btn-sm pn-btn-primary" onclick="selectAndGoToDashboard(${w.id})">Select Well</button>
-            </td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = items.map(w => {
+          let provBadge = '<span class="badge bg-warning text-dark">SYNTHETIC DEMO</span>';
+          if (w.is_real) {
+            provBadge = '<span class="badge bg-success">REAL DATA</span>';
+          } else if (w.is_public) {
+            provBadge = '<span class="badge bg-info text-dark">PUBLIC DATA</span>';
+          } else if (w.is_user_uploaded) {
+            provBadge = '<span class="badge" style="background:#a855f7;">USER UPLOAD</span>';
+          }
+
+          return `
+            <tr>
+              <td><b style="color: #fff;">${w.well_name}</b> ${w.is_active_well ? '<span class="badge bg-primary">ACTIVE</span>' : ''}</td>
+              <td>${provBadge}</td>
+              <td>${w.operator || 'Oil India Limited'}</td>
+              <td style="font-family: var(--pn-font-mono);">${w.latitude ? w.latitude.toFixed(4) : '-'}, ${w.longitude ? w.longitude.toFixed(4) : '-'}</td>
+              <td style="font-family: var(--pn-font-mono); color: var(--pn-cyan-primary);">${w.current_depth_m || 0} m</td>
+              <td style="font-family: var(--pn-font-mono);">${w.target_depth_m || 0} m</td>
+              <td><span class="pn-card-badge" style="background: rgba(2,132,199,0.15); color: #38bdf8;">${w.current_formation || 'N/A'}</span></td>
+              <td>${w.well_type || 'DIRECTIONAL'}</td>
+              <td><span class="badge ${w.status === 'DRILLING_ACTIVE' || w.status === 'DRILLING' ? 'bg-success' : 'bg-secondary'}">${w.status}</span></td>
+              <td>
+                <button class="pn-btn pn-btn-sm pn-btn-primary" onclick="selectAndGoToDashboard(${w.id})">Select Well</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
       }
 
       render(wells);
 
       search.addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
-        const filtered = wells.filter(w => w.well_name.toLowerCase().includes(val) || w.current_formation.toLowerCase().includes(val));
+        const filtered = wells.filter(w => 
+          (w.well_name || '').toLowerCase().includes(val) || 
+          (w.current_formation || '').toLowerCase().includes(val) ||
+          (w.operator || '').toLowerCase().includes(val)
+        );
         render(filtered);
       });
     });

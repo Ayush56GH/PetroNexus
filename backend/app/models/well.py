@@ -26,6 +26,33 @@ class Well(Base):
     owner_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     organization_id = Column(UUID(as_uuid=True), nullable=True)
     visibility = Column(String(50), default="DEMO", nullable=False) # PRIVATE, ORGANIZATION, SHARED, DEMO
+    
+    # Well Master & Geographic Metadata
+    basin = Column(String(100), default="Assam-Arakan Basin")
+    block = Column(String(100), nullable=True)
+    country = Column(String(100), default="India")
+    ground_elevation = Column(Float, default=112.5)
+    kb_elevation = Column(Float, default=120.0)
+    td_md = Column(Float, default=3200.0)
+    td_tvd = Column(Float, default=3136.0)
+    td_tvdss = Column(Float, default=3016.0)
+    rig = Column(String(100), nullable=True)
+    rig_type = Column(String(100), nullable=True)
+    purpose = Column(String(100), nullable=True)
+    formation_target = Column(String(100), nullable=True)
+    reservoir = Column(String(100), nullable=True)
+    coordinate_reference_system = Column(String(50), default="EPSG:4326")
+
+    # Data Provenance System
+    source_id = Column(Integer, ForeignKey("data_sources.id"), nullable=True)
+    source_type = Column(String(50), default="DEMO_SYNTHETIC") # DEMO_SYNTHETIC, PUBLIC_DATASET, USER_UPLOAD, OIL_WITSML, OIL_ERTMAC
+    source_name = Column(String(150), default="Synthetic Demonstration Data")
+    is_real = Column(Boolean, default=False)
+    is_synthetic = Column(Boolean, default=True)
+    is_public = Column(Boolean, default=False)
+    is_user_uploaded = Column(Boolean, default=False)
+    provenance_confidence = Column(Float, default=1.0)
+    provenance_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships

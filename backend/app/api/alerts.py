@@ -9,6 +9,14 @@ from backend.app.schemas.alert import AlertOut, AlertAcknowledge
 
 router = APIRouter(prefix="/alerts", tags=["Alert Center"])
 
+@router.get("/active/count")
+def get_active_alerts_count(well_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Live count of active unacknowledged alerts from database"""
+    query = db.query(Alert).filter(Alert.status == "ACTIVE")
+    if well_id:
+        query = query.filter(Alert.well_id == well_id)
+    return {"count": query.count(), "active": True}
+
 @router.get("", response_model=List[AlertOut])
 def list_alerts(
     well_id: Optional[int] = None,
@@ -30,26 +38,53 @@ def get_alert(alert_id: int, db: Session = Depends(get_db)):
     return alert
 
 @router.post("/{alert_id}/acknowledge")
-def acknowledge_alert(alert_id: int, ack: AlertAcknowledge, db: Session = Depends(get_db)):
+def acknowledge_alert(alert_id: int, payload: dict, db: Session = Depends(get_db)):
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
 
-    alert.status = "ACKNOWLEDGED"
-    alert.acknowledged_at = datetime.datetime.utcnow()
-    alert.acknowledged_by = ack.acknowledged_by or "Drilling Engineer"
+    action = payload.get("action", "ACKNOWLEDGE").upper()
+    acknowledged_by = payload.get("acknowledged_by", "Drilling Engineer")
+    engineer_notes = payload.get("engineer_notes", "")
+
+    now = datetime.datetime.utcnow()
+    if action == "DISMISS":
+        alert.status = "DISMISSED"
+        alert.dismissed_at = now
+    elif action == "ESCALATE":
+        alert.status = "ESCALATED"
+        alert.escalated_at = now
+    else:
+        alert.status = "ACKNOWLEDGED"
+        alert.acknowledged_at = now
+
+    alert.acknowledged_by = acknowledged_by
+    if engineer_notes:
+        alert.engineer_notes = engineer_notes
+
     db.commit()
 
     # Audit log
     audit = AuditLog(
-        action="ALERT_ACKNOWLEDGED",
+        action=f"ALERT_{alert.status}",
         resource=f"alert:{alert.id}",
-        details={"acknowledged_by": alert.acknowledged_by, "alert_title": alert.title}
+        details={
+            "acknowledged_by": acknowledged_by,
+            "status": alert.status,
+            "engineer_notes": engineer_notes,
+            "alert_title": alert.title
+        }
     )
     db.add(audit)
     db.commit()
 
-    return {"status": "SUCCESS", "message": f"Alert {alert_id} acknowledged by {alert.acknowledged_by}"}
+    return {
+        "status": "SUCCESS",
+        "alert_id": alert.id,
+        "new_status": alert.status,
+        "acknowledged_by": alert.acknowledged_by,
+        "engineer_notes": alert.engineer_notes
+    }
 
 @router.get("/{alert_id}/evidence")
 def get_alert_evidence(alert_id: int, db: Session = Depends(get_db)):

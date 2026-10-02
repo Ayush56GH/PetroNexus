@@ -22,6 +22,16 @@ class Document(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     upload_date = synonym("created_at")
     is_processed = Column(Boolean, default=True)
+    ocr_applied = Column(Boolean, default=False)
+    ocr_status = Column(String(50), default="NOT_REQUIRED") # NOT_REQUIRED, PROCESSED, FAILED, UNAVAILABLE, SCANNED_DOCUMENT
+    confidence = Column(Float, default=0.92)
+    source_id = Column(Integer, ForeignKey("data_sources.id"), nullable=True)
+    source_type = Column(String(50), default="DEMO_SYNTHETIC") # DEMO_SYNTHETIC, USER_UPLOAD, PUBLIC_DATASET, OIL_REPORT
+    is_real = Column(Boolean, default=False)
+    is_synthetic = Column(Boolean, default=True)
+    is_user_uploaded = Column(Boolean, default=False)
+    extracted_events_count = Column(Integer, default=0)
+    extracted_formations_count = Column(Integer, default=0)
 
     well = relationship("Well", back_populates="documents")
     pages = relationship("DocumentPage", back_populates="document", cascade="all, delete-orphan")

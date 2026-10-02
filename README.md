@@ -360,13 +360,14 @@ docker-compose up -d --build
 
 ---
 
-## 11. Implemented Requirements Checklist
+## 11. Implemented Requirements Checklist (SIH 26121)
 
+### Core Platform
 - [x] **Single Persona (V1):** Strictly `DRILLING_ENGINEER` with future-ready `role` database architecture.
 - [x] **Current Well Intelligence Ingestion:** Multi-format parser (PDF, CSV, XLSX, LAS, TXT, JSON).
 - [x] **Well Intelligence Readiness:** 0–100% completeness scoring across 11 operational dimensions.
 - [x] **Next Best Data Actions:** Automated missing data recommendations.
-- [x] **Geospatial Offset Well Map:** Interactive Leaflet map with search radii (1km, 5km, 10km, 15km, 20km, 50km).
+- [x] **Geospatial Offset Well Map:** Interactive Leaflet map with search radii (1km–50km).
 - [x] **Multi-Factor Offset Relevance Engine:** 7-factor technical similarity algorithm.
 - [x] **Look-Ahead Corridor:** Configurable look-ahead hazard projection (+50m, +100m, +150m).
 - [x] **Trajectory-Aware Depth Correlation:** Minimum Curvature Method (MD, TVD, TVDSS, DLS).
@@ -375,21 +376,64 @@ docker-compose up -d --build
 - [x] **Evidence Trail ("Why am I seeing this?"):** Verifiable citations linked to source documents and page numbers.
 - [x] **Memory Gap Detector:** Flags incomplete offset well institutional archives.
 - [x] **Conflict Detector:** Detects contradictory stratigraphic or drilling data between documents.
-- [x] **Physics-Informed Indicators:** Mechanical Specific Energy (Teale's MSE) and ECD delta surveillance.
+- [x] **Physics-Informed Indicators:** Teale's MSE, ECD delta, Hook Load surveillance.
+
+### Data Provenance & Real-Data Readiness (SIH 26121 §62–67)
+- [x] **Data Provenance Badges:** Every dataset tagged: `REAL DATA`, `PUBLIC DATA`, `USER UPLOAD`, `SYNTHETIC DEMO`.
+- [x] **Data Source Registry:** 5 canonical sources — `OIL_ERTMAC`, `OIL_WITSML`, `PUBLIC_DATASET`, `USER_UPLOAD`, `DEMO_SYNTHETIC`.
+- [x] **Unit Conversion Engine:** Centralized physical unit normalization (depth, pressure, torque, ECD, flow, temperature).
+- [x] **Data Quality Engine:** Physical bounds validation — impossible ROP/RPM, negative depths, depth reversals.
+- [x] **CSV/Excel Auto-Discovery Adapter:** Synonym-matching column discovery with unit normalization.
+- [x] **LAS 2.0 Petrophysical Log Parser:** Depth-indexed curve extraction (GR, RHOB, NPHI, DT, CALI).
+- [x] **WITSML 1.4.1.1 / 2.0 Connector:** 21-channel enterprise adapter with authenticated/unauthenticated status.
+- [x] **eRTMAC Status Display:** Transparently shows "CONFIGURED BUT NOT CONNECTED" when offline.
+
+### Document Intelligence & OCR (SIH 26121 §72–77)
+- [x] **Tesseract OCR Fallback:** Auto-detects scanned PDFs and runs OCR pipeline.
+- [x] **Subsurface Entity Extractor:** 12+ drilling hazard categories, formation tops, depths, NPT hours.
+- [x] **PDF Page Citation:** Every extracted event linked to source document and page number.
+- [x] **Data Ingestion Center:** `/data-import.html` — unified drag-drop interface for all file types.
+
+### Real-Time & Replay (SIH 26121 §68–71)
 - [x] **Simulated eRTMAC WebSocket:** Real-time bi-directional telemetry stream (`/ws/drilling/{well_id}`).
-- [x] **Real-Time Anomaly Detection:** Real-time flagging of Torque spikes, ROP drops, and ECD excursions.
-- [x] **AI Drilling Assistant:** LangChain RAG with Grok API integration and deterministic fallback grounding.
-- [x] **Pre-Interval Brief & Context Pack:** Automated PDF and JSON report generation.
+- [x] **Real Data Replay Engine:** Play, Pause, Step, Reset, Speed (1x–10x) over historical CSV datasets (`/ws/replay/{well_id}`).
+- [x] **Stream Mode Selector:** Dashboard toggle between Simulated eRTMAC and Real Data Replay.
+- [x] **Real-Time Anomaly Detection:** Torque spikes, ROP drops, ECD excursions flagged in real-time.
+
+### AI Assistant (SIH 26121 §82–86)
+- [x] **Query Classifier:** Separates GENERAL, LOOKAHEAD, DRILLING_ENGINEERING, HISTORICAL_WELL_KNOWLEDGE, DOCUMENT_SEARCH.
+- [x] **LangChain RAG:** Deterministic grounded retrieval — never hallucinate wells, depths, or events.
+- [x] **Section 84 Structured Response:** All drilling answers use SUMMARY / CURRENT CONTEXT / HISTORICAL EVIDENCE / WHY IT MATTERS / SOURCES headers.
+- [x] **Deterministic Fallback:** If LLM API fails, responds with grounded offset evidence from database.
+- [x] **Multi-Turn Conversation Memory:** Full conversation history persisted in Supabase per user.
+- [x] **General Query Handling:** General questions answered naturally without drilling context dumps.
+
+### Security & Multi-User (SIH 26121 §88–95)
+- [x] **Supabase JWT Authentication:** Cryptographic token verification per request.
+- [x] **Multi-User RAG Isolation:** Cross-user document boundary enforced at database level (pgvector security-definer functions).
+- [x] **Prompt Injection Resistance:** Database authorization rejects unauthorized chunk retrieval.
 - [x] **Audit Trail:** Comprehensive audit logging of logins, uploads, queries, and alert acknowledgments.
-- [x] **Automated Test Suite:** 20 automated tests verifying authentication, ingestion, spatial math, physics, and RAG.
+
+### Alerts & Reports (SIH 26121 §96–100)
+- [x] **5-Point Engineering Alerts:** What happened / Why it matters / Historical evidence / Current indicator / Recommendations.
+- [x] **Alert Actions:** ACKNOWLEDGED, ESCALATED, DISMISSED with engineer notes.
+- [x] **Pre-Interval Brief & Context Pack:** Automated PDF and JSON report generation.
+- [x] **Depth Hazard Heatmap:** Section 80 — visual formation risk heat map.
+- [x] **Formation Risk Profiles:** Section 81 — per-formation risk assessment across offset wells.
+
+### Automated Testing
+- [x] **9 Test Suites / 43+ Tests:** Authentication, Ingestion, Spatial, Physics, Alerts, RAG Security, Chat Memory, Groq Integration, Real-Data Pipeline.
+- [x] **Single Command Runner:** `python tests/run_all_tests.py`
+- [x] **Single Launcher:** `START_PETRONEXUS.bat` (Windows) starts complete platform.
 
 ---
 
 ## 12. Known Limitations & Roadmap
 
-1. **V1 Persona Scope:** Only `DRILLING_ENGINEER` is activated for V1. Geologist, Petrophysicist, and Operations Manager consoles are reserved for future phases.
-2. **Real eRTMAC Integration:** Production deployment will interface with real WITSML/OPC-UA telemetry streams via secure OIL network gateways.
-3. **Enterprise Storage:** Demonstrations use local SQLite with spatial math and local storage; production deployments scale to PostgreSQL/PostGIS and S3-compatible document storage.
+1. **V1 Persona Scope:** Only `DRILLING_ENGINEER` activated. Geologist, Petrophysicist, Operations Manager consoles reserved for future phases.
+2. **Real eRTMAC Integration:** Production deployment will interface with real WITSML/OPC-UA telemetry streams via secure OIL network gateways. The WITSML connector is fully implemented and configured — only live OIL credentials are needed.
+3. **Tesseract OCR:** For scanned PDFs, Tesseract must be installed system-wide (`choco install tesseract` or `/usr/bin/tesseract`). PyMuPDF text-layer extraction works without it.
+4. **Enterprise Storage:** Demo uses Supabase (PostgreSQL + pgvector + PostGIS). Production scales identically — no migration needed.
 
 ---
 

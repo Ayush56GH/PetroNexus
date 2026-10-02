@@ -63,9 +63,9 @@ function initMap() {
   }).setView([27.3520, 95.3180], 12);
 
   // High-contrast dark cartographic tiles
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 18,
-    subdomains: 'abcd'
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
   }).addTo(mapInstance);
 }
 
@@ -193,7 +193,18 @@ async function loadActiveWellDashboard() {
     const readinessBar = document.getElementById('tbReadinessBar');
     if (readinessBar) readinessBar.style.width = `${comp.readiness_score}%`;
 
-    // 3. Fetch Full Offset Analysis
+    // 3. Fetch Active Alerts Count (SIH 26121 Section 50 & 51)
+    try {
+      const alertCountData = await PetroNexusAPI.getActiveAlertsCount(activeId);
+      const tbAlertCount = document.getElementById('tbAlertCount');
+      if (tbAlertCount && alertCountData) {
+        tbAlertCount.textContent = alertCountData.active_alerts_count;
+      }
+    } catch (e) {
+      console.warn('Could not fetch active alerts count:', e);
+    }
+
+    // 4. Fetch Full Offset Analysis
     const radiusSelect = document.getElementById('searchRadiusSelect');
     const radiusKm = radiusSelect ? parseFloat(radiusSelect.value) : 15.0;
     const lookaheadSelect = document.getElementById('lookaheadSelect');
@@ -207,16 +218,16 @@ async function loadActiveWellDashboard() {
       lookahead_m: lookaheadM
     });
 
-    // 4. Update Map with active well & offsets
+    // 5. Update Map with active well & offsets
     updateMapLayers(well, analysis.nearby_wells, radiusKm);
 
-    // 5. Update Subsurface Memory Column (Panel 3)
+    // 6. Update Subsurface Memory Column (Panel 3)
     renderSubsurfaceMemory(well, analysis.historical_events);
 
-    // 6. Update Proactive Advisor & Alerts (Panel 4)
+    // 7. Update Proactive Advisor & Alerts (Panel 4)
     renderProactiveAdvisor(analysis);
 
-    // 7. Update Offset Memory Cards
+    // 8. Update Offset Memory Cards
     renderOffsetMemoryCards(analysis.comparable_wells);
 
   } catch (err) {
@@ -451,7 +462,9 @@ function renderOffsetMemoryCards(comparableWells) {
   container.innerHTML = html;
 }
 
-// 5. WebSocket Connection for Simulated eRTMAC (Section 27)
+// 5. WebSocket Connection for Simulated eRTMAC & Real Data Replay (SIH 26121 Section 27, 68, 69)
+let currentStreamMode = 'SIMULATOR';
+
 function initWebSocket() {
   if (wsConnection) {
     wsConnection.close();
@@ -459,12 +472,31 @@ function initWebSocket() {
 
   const activeId = PetroNexusAPI.getActiveWellId();
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/ws/drilling/${activeId}`;
+  const modeSel = document.getElementById('streamModeSelect');
+  currentStreamMode = modeSel ? modeSel.value : 'SIMULATOR';
+
+  const endpoint = currentStreamMode === 'REPLAY' ? `/ws/replay/${activeId}` : `/ws/drilling/${activeId}`;
+  const wsUrl = `${protocol}//${window.location.host}${endpoint}`;
 
   wsConnection = new WebSocket(wsUrl);
 
+  const tbErtmac = document.getElementById('tbErtmacStatus');
+
   wsConnection.onopen = () => {
-    console.log(`Connected to eRTMAC WebSocket for Well ${activeId}`);
+    console.log(`Connected to WebSocket (${currentStreamMode}) for Well ${activeId}`);
+    if (tbErtmac) {
+      if (currentStreamMode === 'REPLAY') {
+        tbErtmac.innerHTML = '<span class="pn-live-dot" style="background:#38bdf8;"></span> REPLAY READY';
+        tbErtmac.style.background = 'rgba(2, 132, 199, 0.2)';
+        tbErtmac.style.color = '#38bdf8';
+        tbErtmac.style.borderColor = 'rgba(2, 132, 199, 0.4)';
+      } else {
+        tbErtmac.innerHTML = '<span class="pn-live-dot" style="background:#f59e0b;"></span> SIM STANDBY';
+        tbErtmac.style.background = 'rgba(245, 158, 11, 0.2)';
+        tbErtmac.style.color = '#fbbf24';
+        tbErtmac.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      }
+    }
   };
 
   wsConnection.onmessage = (event) => {
@@ -473,7 +505,12 @@ function initWebSocket() {
   };
 
   wsConnection.onclose = () => {
-    console.log('eRTMAC WebSocket closed.');
+    console.log('Telemetry WebSocket closed.');
+    if (tbErtmac) {
+      tbErtmac.innerHTML = '<span class="pn-live-dot" style="background:#94a3b8;"></span> STANDBY';
+      tbErtmac.style.background = 'rgba(100, 116, 139, 0.2)';
+      tbErtmac.style.color = '#94a3b8';
+    }
   };
 }
 
@@ -482,49 +519,63 @@ function handleLiveTelemetryTick(data) {
   const t = data.telemetry;
   if (!t) return;
 
+  const tbErtmac = document.getElementById('tbErtmacStatus');
+  if (tbErtmac && data.is_running) {
+    if (currentStreamMode === 'REPLAY') {
+      tbErtmac.innerHTML = '<span class="pn-live-dot" style="background:#38bdf8;"></span> REPLAYING REAL DATA';
+      tbErtmac.style.background = 'rgba(2, 132, 199, 0.25)';
+      tbErtmac.style.color = '#38bdf8';
+    } else {
+      tbErtmac.innerHTML = '<span class="pn-live-dot" style="background:#10b981;"></span> SIMULATING eRTMAC';
+      tbErtmac.style.background = 'rgba(16, 185, 129, 0.2)';
+      tbErtmac.style.color = '#34d399';
+    }
+  }
+
   // Update Digital Gauges
-  setGauge('gDepth', `${t.depth.toFixed(1)} m`);
-  setGauge('gRop', `${t.rop.toFixed(1)} m/hr`);
-  setGauge('gWob', `${t.wob.toFixed(1)} t`);
-  setGauge('gRpm', `${Math.round(t.rpm)}`);
-  setGauge('gTorque', `${t.torque.toFixed(1)} kN.m`);
-  setGauge('gEcd', `${t.ecd.toFixed(3)} SG`);
-  setGauge('gMw', `${t.mud_weight.toFixed(2)} SG`);
-  setGauge('gSpp', `${Math.round(t.spp)} psi`);
-  setGauge('gFlow', `${Math.round(t.flow_rate)} lpm`);
+  setGauge('gDepth', `${(t.depth || t.depth_md || 0).toFixed(1)} m`);
+  setGauge('gRop', `${(t.rop || 0).toFixed(1)} m/hr`);
+  setGauge('gWob', `${(t.wob || 0).toFixed(1)} t`);
+  setGauge('gRpm', `${Math.round(t.rpm || 0)}`);
+  setGauge('gTorque', `${(t.torque || 0).toFixed(1)} kN.m`);
+  setGauge('gEcd', `${(t.ecd || 1.25).toFixed(3)} SG`);
+  setGauge('gMw', `${(t.mud_weight || 1.20).toFixed(2)} SG`);
+  setGauge('gSpp', `${Math.round(t.spp || 0)} psi`);
+  setGauge('gFlow', `${Math.round(t.flow_rate || t.flow_in || 0)} lpm`);
   setGauge('gMse', t.mse ? `${t.mse.toFixed(1)} MPa` : 'N/A');
 
   // Update Topbar Depth & Bit Position in Subsurface column
+  const curDepth = (t.depth || t.depth_md || 0).toFixed(1);
   const tbDepth = document.getElementById('tbDepth');
-  if (tbDepth) tbDepth.textContent = `${t.depth.toFixed(1)} m`;
+  if (tbDepth) tbDepth.textContent = `${curDepth} m`;
 
   const bitMarkerDepth = document.getElementById('bitMarkerDepth');
-  if (bitMarkerDepth) bitMarkerDepth.textContent = `${t.depth.toFixed(1)} m MD`;
+  if (bitMarkerDepth) bitMarkerDepth.textContent = `${curDepth} m MD`;
 
   // Update Rolling Charts
   if (telemetryChart) {
-    const timeLabel = t.timestamp.split(' ')[1] || '';
+    const timeLabel = (t.timestamp || '').split(' ')[1] || (t.timestamp || '').substring(11, 19) || '';
     if (telemetryChart.data.labels.length > 20) {
       telemetryChart.data.labels.shift();
       telemetryChart.data.datasets[0].data.shift();
       telemetryChart.data.datasets[1].data.shift();
     }
     telemetryChart.data.labels.push(timeLabel);
-    telemetryChart.data.datasets[0].data.push(t.torque);
-    telemetryChart.data.datasets[1].data.push(t.rop);
+    telemetryChart.data.datasets[0].data.push(t.torque || 0);
+    telemetryChart.data.datasets[1].data.push(t.rop || 0);
     telemetryChart.update();
   }
 
   if (ecdChart) {
-    const timeLabel = t.timestamp.split(' ')[1] || '';
+    const timeLabel = (t.timestamp || '').split(' ')[1] || (t.timestamp || '').substring(11, 19) || '';
     if (ecdChart.data.labels.length > 20) {
       ecdChart.data.labels.shift();
       ecdChart.data.datasets[0].data.shift();
       ecdChart.data.datasets[1].data.shift();
     }
     ecdChart.data.labels.push(timeLabel);
-    ecdChart.data.datasets[0].data.push(t.ecd);
-    ecdChart.data.datasets[1].data.push(t.mud_weight);
+    ecdChart.data.datasets[0].data.push(t.ecd || 1.25);
+    ecdChart.data.datasets[1].data.push(t.mud_weight || 1.20);
     ecdChart.update();
   }
 
@@ -536,12 +587,12 @@ function handleLiveTelemetryTick(data) {
       anomalyContainer.style.display = 'block';
       anomalyContainer.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; font-weight: 700; color: #fff;">
-          <span>⚠ REAL-TIME DRILLING ANOMALY: ${a.anomaly_types.join(', ')}</span>
+          <span>⚠ REAL-TIME DRILLING ANOMALY: ${(a.anomaly_types || []).join(', ')}</span>
           <span style="font-size: 0.72rem; background: var(--pn-rose-danger); padding: 2px 6px; border-radius: 3px;">CRITICAL</span>
         </div>
         <div style="font-size: 0.78rem; color: #fee2e2; margin-top: 3px;">
-          ${a.details.join(' • ')}<br/>
-          <b>Action:</b> ${a.suggested_actions.join(' ')}
+          ${(a.details || []).join(' • ')}<br/>
+          <b>Action:</b> ${(a.suggested_actions || []).join(' ')}
         </div>
       `;
     } else {
@@ -568,13 +619,31 @@ function setGauge(id, val) {
   if (el) el.textContent = val;
 }
 
-// Simulator Control Buttons
+// Telemetry & Simulator Control Listeners
 function initEventListeners() {
+  const streamMode = document.getElementById('streamModeSelect');
+  if (streamMode) {
+    streamMode.addEventListener('change', () => {
+      initWebSocket();
+    });
+  }
+
+  const speedSelect = document.getElementById('replaySpeedSelect');
+  if (speedSelect) {
+    speedSelect.addEventListener('change', () => {
+      const spd = parseFloat(speedSelect.value);
+      if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+        wsConnection.send(JSON.stringify({ command: 'SPEED', speed: spd }));
+      }
+    });
+  }
+
   const btnStart = document.getElementById('btnStartSim');
   if (btnStart) {
     btnStart.addEventListener('click', () => {
       if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-        wsConnection.send('START');
+        const spd = speedSelect ? parseFloat(speedSelect.value) : 1.0;
+        wsConnection.send(JSON.stringify({ command: 'START', speed: spd }));
       }
     });
   }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, ForeignKey
 from sqlalchemy.orm import relationship
 from backend.app.database import Base
 
@@ -15,5 +15,7 @@ class WellTrajectory(Base):
     dogleg_severity = Column(Float, default=0.0) # deg/30m
     northing_m = Column(Float, default=0.0)
     easting_m = Column(Float, default=0.0)
+    survey_time = Column(String(50), nullable=True)
+    source_id = Column(Integer, ForeignKey("data_sources.id"), nullable=True)
 
     well = relationship("Well", back_populates="trajectories")

@@ -228,6 +228,70 @@ const PetroNexusAPI = {
   getAuditLogs(action) {
     const q = action ? `?action=${action}` : '';
     return this.request(`/audit-logs${q}`);
+  },
+
+  // Dynamic Live Counts & Data Sources (SIH 26121 Section 3, 50, 51)
+  getWellsCount() {
+    return this.request('/wells/count');
+  },
+  getActiveAlertsCount(wellId) {
+    const q = wellId ? `?well_id=${wellId}` : '';
+    return this.request(`/alerts/active/count${q}`);
+  },
+  getDataSources() {
+    return this.request('/data-sources');
+  },
+  configureWitsml(config) {
+    return this.request('/data-sources/witsml/configure', {
+      method: 'POST',
+      body: JSON.stringify(config)
+    });
+  },
+  getWitsmlChannels() {
+    return this.request('/data-sources/witsml/channels');
+  },
+  disconnectWitsml() {
+    return this.request('/data-sources/witsml/disconnect', { method: 'POST' });
+  },
+
+  // Data Ingestion Portal (SIH 26121 Section 10 & 48)
+  previewImportFile(formData) {
+    return this.request('/ingestion/preview', {
+      method: 'POST',
+      body: formData
+    });
+  },
+  executeImport(payload) {
+    return this.request('/ingestion/import', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+  getIngestionJobs() {
+    return this.request('/ingestion/jobs');
+  },
+
+  // Real Data Replay (SIH 26121 Section 68 & 69)
+  getReplayStatus(wellId = 23) {
+    return this.request(`/ingestion/replay/status?well_id=${wellId}`);
+  },
+  controlReplay(payload) {
+    return this.request('/ingestion/replay/control', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  // Subsurface Intelligence Analytics
+  getFormationCorrelation(wellId = 23, depth = null) {
+    const q = depth ? `&depth=${depth}` : '';
+    return this.request(`/intelligence/formation-correlation?well_id=${wellId}${q}`);
+  },
+  getFormationRiskProfile() {
+    return this.request('/intelligence/formation-risk-profile');
+  },
+  getDepthHeatmap(intervalM = 100) {
+    return this.request(`/intelligence/depth-heatmap?interval_m=${intervalM}`);
   }
 };
 

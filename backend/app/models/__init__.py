@@ -9,9 +9,15 @@ from backend.app.models.document import Document, DocumentPage, KnowledgeChunk
 from backend.app.models.alert import Alert, AlertEvidence
 from backend.app.models.quality import DataQualityMetric, RiskAssessment
 from backend.app.models.audit import AuditLog
+from backend.app.models.data_source import DataSource
+from backend.app.models.telemetry import TelemetryMeasurement
+from backend.app.models.ingestion import IngestionJob
 
 __all__ = [
     "User",
+    "Profile",
+    "Conversation",
+    "Message",
     "Well",
     "WellUploadSession",
     "WellTrajectory",
@@ -33,4 +39,8 @@ __all__ = [
     "DataQualityMetric",
     "RiskAssessment",
     "AuditLog",
+    "DataSource",
+    "TelemetryMeasurement",
+    "IngestionJob",
 ]
+

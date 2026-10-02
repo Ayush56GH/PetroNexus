@@ -12,6 +12,21 @@ from backend.app.services.spatial_service import get_nearby_wells
 
 router = APIRouter(prefix="/wells", tags=["Wells"])
 
+@router.get("/count")
+def get_wells_count(db: Session = Depends(get_db)):
+    """Returns dynamic total well counts, active well, and provenance breakdown"""
+    total = db.query(Well).count()
+    real_count = db.query(Well).filter(Well.is_real == True).count()
+    synthetic_count = db.query(Well).filter(Well.is_synthetic == True).count()
+    active_well = db.query(Well).filter(Well.is_active_well == True).first()
+    return {
+        "total_wells": total,
+        "real_wells": real_count,
+        "synthetic_wells": synthetic_count,
+        "active_well_id": active_well.id if active_well else None,
+        "active_well_name": active_well.well_name if active_well else None
+    }
+
 @router.get("", response_model=List[WellOut])
 def list_wells(
     status: Optional[str] = None,

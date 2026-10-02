@@ -29,10 +29,13 @@ from backend.app.config import settings
 from backend.app.database import engine, Base
 from backend.app.api import api_router
 from backend.app.realtime.ertmac_simulator import ertmac_simulator
+from backend.app.realtime.replay_engine import replay_engine
 from backend.app.utils.logger import logger
 
-# Initialize database tables
-Base.metadata.create_all(bind=engine)
+from backend.app.utils.db_sync import sync_database_schema
+
+# Initialize and sync database tables & schema columns
+sync_database_schema()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -58,7 +61,6 @@ async def websocket_drilling_endpoint(websocket: WebSocket, well_id: int):
     await ertmac_simulator.connect(websocket, well_id)
     try:
         while True:
-            # Wait for client control commands (e.g. START, PAUSE, RESET)
             data = await websocket.receive_text()
             cmd = data.strip().upper()
             if cmd.startswith("{"):
@@ -76,7 +78,6 @@ async def websocket_drilling_endpoint(websocket: WebSocket, well_id: int):
             elif cmd == "TICK":
                 await ertmac_simulator.broadcast_tick(well_id)
             
-            # Immediately send updated state
             await ertmac_simulator.broadcast_tick(well_id)
     except WebSocketDisconnect:
         ertmac_simulator.disconnect(websocket, well_id)
@@ -84,7 +85,41 @@ async def websocket_drilling_endpoint(websocket: WebSocket, well_id: int):
         logger.error(f"WebSocket error: {e}")
         ertmac_simulator.disconnect(websocket, well_id)
 
-# Background task for auto-ticking simulated eRTMAC when running
+# WebSocket for Real Data Replay
+@app.websocket("/ws/replay/{well_id}")
+async def websocket_replay_endpoint(websocket: WebSocket, well_id: int):
+    await replay_engine.connect(websocket, well_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            cmd = data.strip().upper()
+            speed = 1.0
+            if cmd.startswith("{"):
+                try:
+                    payload = json.loads(data)
+                    cmd = str(payload.get("command", "")).strip().upper()
+                    speed = float(payload.get("speed", 1.0))
+                except Exception:
+                    pass
+            if cmd in ["START", "PLAY"]:
+                replay_engine.play(well_id, speed)
+            elif cmd == "PAUSE":
+                replay_engine.pause(well_id)
+            elif cmd == "RESET":
+                replay_engine.reset(well_id)
+            elif cmd == "SPEED":
+                replay_engine.set_speed(well_id, speed)
+            elif cmd in ["TICK", "STEP"]:
+                await replay_engine.broadcast_tick(well_id)
+            
+            await replay_engine.broadcast_tick(well_id)
+    except WebSocketDisconnect:
+        replay_engine.disconnect(websocket, well_id)
+    except Exception as e:
+        logger.error(f"Replay WebSocket error: {e}")
+        replay_engine.disconnect(websocket, well_id)
+
+# Background tasks for auto-ticking simulation and replay
 @app.on_event("startup")
 async def startup_event():
     async def simulation_loop():
@@ -94,8 +129,18 @@ async def startup_event():
                 state = ertmac_simulator.get_or_create_state(w_id)
                 if state.get("is_running", False):
                     await ertmac_simulator.broadcast_tick(w_id)
+
+    async def replay_loop():
+        while True:
+            await asyncio.sleep(0.5)
+            for w_id in list(replay_engine.active_connections.keys()):
+                state = replay_engine.get_or_create_state(w_id)
+                if state.get("is_running", False):
+                    await replay_engine.broadcast_tick(w_id)
+
     asyncio.create_task(simulation_loop())
-    logger.info("PetroNexus backend started successfully.")
+    asyncio.create_task(replay_loop())
+    logger.info("PetroNexus backend started successfully with Replay and Simulator engines.")
 
 # Mount frontend directory for full-stack unified single-port hosting
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"

@@ -249,3 +249,113 @@ def get_well_memory_card(well_id: int, db: Session = Depends(get_db)):
         "historical_response": event.immediate_mitigation if event else "LCM treatment + controlled circulation",
         "source": f"{event.source_document_name} / Page {event.source_page_number}" if event else "WCR-018 / Page 37"
     }
+
+@router.get("/formation-correlation")
+def get_formation_correlation(
+    well_id: Optional[int] = 23,
+    depth: Optional[float] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    True depth and formation correlation aligning active well and offsets
+    by TVD, TVDSS, and formation boundaries rather than naive MD.
+    """
+    from backend.app.services.correlation_service import correlation_engine
+    well = db.query(Well).filter(Well.id == well_id).first()
+    if not well:
+        well = db.query(Well).filter(Well.well_name == "OIL-DEMO-023").first()
+    if not well:
+        well = db.query(Well).first()
+
+    offsets = db.query(Well).filter(Well.id != well.id).limit(5).all()
+    return correlation_engine.correlate_wells_by_depth(db, well, offsets, reference_depth_md=depth)
+
+@router.get("/formation-risk-profile")
+def get_formation_risk_profile(db: Session = Depends(get_db)):
+    """
+    Computes statistical hazard profile per formation: event count, types,
+    severity, NPT hours, affected wells, average depth (Section 81).
+    """
+    events = db.query(DrillingEvent).all()
+    profile_by_fm = {}
+
+    for ev in events:
+        fm = ev.formation_name or "Unknown Formation"
+        if fm not in profile_by_fm:
+            profile_by_fm[fm] = {
+                "formation_name": fm,
+                "total_events": 0,
+                "wells_affected": set(),
+                "event_types": {},
+                "severities": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
+                "total_npt_hours": 0.0,
+                "depths": [],
+                "mitigations_count": 0
+            }
+
+        p = profile_by_fm[fm]
+        p["total_events"] += 1
+        p["wells_affected"].add(ev.well_id)
+        etype = ev.event_type
+        p["event_types"][etype] = p["event_types"].get(etype, 0) + 1
+        sev = ev.severity.upper() if ev.severity else "MEDIUM"
+        if sev in p["severities"]:
+            p["severities"][sev] += 1
+        p["total_npt_hours"] += float(getattr(ev, "npt_hours", 4.0) or 4.0)
+        p["depths"].append(ev.depth_md_m)
+        if ev.immediate_mitigation:
+            p["mitigations_count"] += 1
+
+    out = []
+    for fm, data in profile_by_fm.items():
+        avg_depth = round(sum(data["depths"]) / len(data["depths"]), 1) if data["depths"] else 0.0
+        out.append({
+            "formation_name": fm,
+            "total_events": data["total_events"],
+            "unique_wells_affected": len(data["wells_affected"]),
+            "event_breakdown": data["event_types"],
+            "severity_breakdown": data["severities"],
+            "total_npt_hours": round(data["total_npt_hours"], 1),
+            "average_event_depth_m": avg_depth,
+            "documented_mitigations": data["mitigations_count"],
+            "disclaimer": "Historical event statistics from offset records. Decision support only."
+        })
+
+    out.sort(key=lambda x: x["total_events"], reverse=True)
+    return out
+
+@router.get("/depth-heatmap")
+def get_depth_hazard_heatmap(
+    interval_m: float = 100.0,
+    db: Session = Depends(get_db)
+):
+    """
+    Computes historical event frequency by depth bins (Section 80: Historical Risk vs Depth).
+    """
+    events = db.query(DrillingEvent).all()
+    bins = {}
+
+    for ev in events:
+        d = ev.depth_md_m
+        bin_start = int(d // interval_m) * int(interval_m)
+        bin_label = f"{bin_start} - {bin_start + int(interval_m)} m"
+        if bin_label not in bins:
+            bins[bin_label] = {
+                "bin_start_m": bin_start,
+                "bin_end_m": bin_start + int(interval_m),
+                "label": bin_label,
+                "total_events": 0,
+                "categories": {}
+            }
+        b = bins[bin_label]
+        b["total_events"] += 1
+        cat = "Mud Loss" if "Loss" in ev.event_type else (
+            "Torque / Stuck" if ("Torque" in ev.event_type or "Stuck" in ev.event_type) else (
+                "Kick / Influx" if "Kick" in ev.event_type else "Other Hazards"
+            )
+        )
+        b["categories"][cat] = b["categories"].get(cat, 0) + 1
+
+    sorted_bins = sorted(bins.values(), key=lambda x: x["bin_start_m"])
+    return sorted_bins
+

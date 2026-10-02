@@ -48,6 +48,7 @@ a {
   text-decoration: none;
   transition: var(--pn-transition);
 }
+
 a:hover {
   color: #38bdf8;
 }
@@ -59,13 +60,16 @@ a:hover {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--pn-bg-base);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--pn-border-strong);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--pn-cyan-primary);
 }
@@ -160,9 +164,20 @@ a:hover {
 }
 
 @keyframes pulse-live {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
 
 /* ==========================================================================
@@ -197,7 +212,8 @@ a:hover {
   transition: var(--pn-transition);
 }
 
-.pn-nav-link:hover, .pn-nav-link.active {
+.pn-nav-link:hover,
+.pn-nav-link.active {
   color: #fff;
   background: var(--pn-bg-surface-elevated);
   border: 1px solid var(--pn-border-subtle);
@@ -427,9 +443,11 @@ a:hover {
 .pn-alert-item.severity-HIGH {
   border-left-color: var(--pn-rose-danger);
 }
+
 .pn-alert-item.severity-MODERATE {
   border-left-color: var(--pn-amber-warning);
 }
+
 .pn-alert-item.severity-LOW {
   border-left-color: var(--pn-cyan-primary);
 }
@@ -485,6 +503,7 @@ a:hover {
   border-color: #0284c7;
   color: #fff;
 }
+
 .pn-btn-primary:hover {
   background: #0369a1;
   color: #fff;
@@ -495,6 +514,7 @@ a:hover {
   border-color: #dc2626;
   color: #fff;
 }
+
 .pn-btn-danger:hover {
   background: #b91c1c;
 }
@@ -505,6 +525,7 @@ a:hover {
   color: #070a13;
   font-weight: 700;
 }
+
 .pn-btn-success:hover {
   background: #047857;
   color: #fff;
@@ -515,7 +536,8 @@ a:hover {
   font-size: 0.75rem;
 }
 
-.pn-input, .pn-select {
+.pn-input,
+.pn-select {
   background: var(--pn-bg-base);
   border: 1px solid var(--pn-border-strong);
   color: #fff;
@@ -526,7 +548,8 @@ a:hover {
   transition: var(--pn-transition);
 }
 
-.pn-input:focus, .pn-select:focus {
+.pn-input:focus,
+.pn-select:focus {
   border-color: var(--pn-cyan-primary);
   box-shadow: 0 0 0 2px var(--pn-cyan-glow);
 }
@@ -646,4 +669,31 @@ a:hover {
   justify-content: center;
   gap: 0.5rem;
   text-align: center;
+}
+
+/* =========================================================
+   PetroNexus — Dark Map Theme
+   ========================================================= */
+
+.leaflet-tile-pane {
+  filter: brightness(0.72) contrast(1.12) saturate(0.75);
+}
+
+.leaflet-control-zoom a {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #1e293b !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #94a3b8 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #60a5fa !important;
 }
