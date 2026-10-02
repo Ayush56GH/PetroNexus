@@ -198,10 +198,13 @@ const PetroNexusAPI = {
   },
 
   // AI Assistant
-  queryAI(query, wellId, depth) {
+  queryAI(query, wellId, depth, conversationId) {
+    const payload = { query, well_id: wellId };
+    if (depth !== undefined && depth !== null) payload.current_depth = depth;
+    if (conversationId) payload.conversation_id = conversationId;
     return this.request('/ai/query', {
       method: 'POST',
-      body: JSON.stringify({ query, well_id: wellId, current_depth: depth })
+      body: JSON.stringify(payload)
     });
   },
 

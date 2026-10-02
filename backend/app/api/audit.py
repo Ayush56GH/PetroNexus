@@ -15,7 +15,7 @@ def list_audit_logs(
     query = db.query(AuditLog)
     if action:
         query = query.filter(AuditLog.action == action)
-    logs = query.order_by(AuditLog.timestamp.desc()).limit(limit).all()
+    logs = query.order_by(AuditLog.created_at.desc()).limit(limit).all()
     return [
         {
             "id": l.id,
@@ -24,6 +24,6 @@ def list_audit_logs(
             "resource": l.resource,
             "details": l.details,
             "ip_address": l.ip_address,
-            "timestamp": l.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": (l.created_at or l.timestamp).strftime("%Y-%m-%d %H:%M:%S") if (l.created_at or l.timestamp) else ""
         } for l in logs
     ]

@@ -1,4 +1,5 @@
-from backend.app.models.user import User
+from backend.app.models.user import User, Profile
+from backend.app.models.conversation import Conversation, Message
 from backend.app.models.well import Well, WellUploadSession
 from backend.app.models.trajectory import WellTrajectory
 from backend.app.models.formation import Formation, FormationInterval

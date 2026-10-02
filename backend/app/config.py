@@ -21,7 +21,24 @@ class Settings(BaseModel):
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/petronexus.db")
     
-    # xAI / Grok API
+    # Supabase Configuration
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    SUPABASE_PUBLISHABLE_KEY: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", os.getenv("SUPABASE_KEY", ""))
+    
+    # Embeddings & Vector Search (Local BAAI/bge-small-en-v1.5)
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "local")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+    EMBEDDING_DIMENSION: int = int(os.getenv("EMBEDDING_DIMENSION", "384"))
+    
+    # LLM Provider Selection ("groq" or "xai")
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "groq")
+
+    # Groq API Configuration
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+    # xAI / Grok API Configuration (Preserved)
     XAI_API_KEY: str = os.getenv("XAI_API_KEY", "")
     GROK_MODEL: str = os.getenv("GROK_MODEL", "grok-2-latest")
     

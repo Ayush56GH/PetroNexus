@@ -1,5 +1,6 @@
 import datetime
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from backend.app.database import Base
 
@@ -22,6 +23,9 @@ class Well(Base):
     current_depth_m = Column(Float, default=2846.0)
     current_formation = Column(String(100), default="Formation-X")
     is_active_well = Column(Boolean, default=False)
+    owner_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    organization_id = Column(UUID(as_uuid=True), nullable=True)
+    visibility = Column(String(50), default="DEMO", nullable=False) # PRIVATE, ORGANIZATION, SHARED, DEMO
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
@@ -38,7 +42,7 @@ class WellUploadSession(Base):
     __tablename__ = "well_upload_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True)
     well_id = Column(Integer, ForeignKey("wells.id"), nullable=True)
     file_name = Column(String(255), nullable=False)
     file_type = Column(String(50), nullable=False) # PDF, CSV, XLSX, LAS, TXT, JSON

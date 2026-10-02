@@ -14,7 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.test_auth import (
-    test_password_hashing, test_jwt_token, test_demo_user_exists
+    test_supabase_auth_login_user_a, test_supabase_auth_signup_user_b,
+    test_multi_user_profile_isolation, test_invalid_token_rejected
 )
 from tests.test_current_well import (
     test_pdf_extraction, test_csv_extraction, test_las_extraction,
@@ -32,45 +33,68 @@ from tests.test_alerts_and_reports import (
     test_alerts_and_evidence, test_pdf_report_generation,
     test_rag_assistant_grounded_response
 )
+from tests.test_rag_pipeline import (
+    test_embedding_dimensions, test_pgvector_similarity_search,
+    setup_private_test_documents, test_cross_user_rag_isolation,
+    test_prompt_injection_resistance
+)
+from tests.test_chat_memory import run_chat_memory_tests
+from tests.test_groq_integration import run_all_groq_tests
+import asyncio
 
 def run_all():
-    print("=" * 65)
+    print("=" * 70)
     print("      PETRONEXUS AUTOMATED VERIFICATION TEST SUITE (SIH26121)")
-    print("=" * 65)
+    print("=" * 70)
 
-    print("\n[1/5] Running Authentication Tests...")
-    test_password_hashing()
-    test_jwt_token()
-    test_demo_user_exists()
+    print("\n[1/8] Running Supabase Authentication & Multi-User Identity Tests...")
+    token_a = test_supabase_auth_login_user_a()
+    token_b = test_supabase_auth_signup_user_b()
+    test_multi_user_profile_isolation(token_a, token_b)
+    test_invalid_token_rejected()
 
-    print("\n[2/5] Running Current Well Ingestion Tests...")
+    print("\n[2/8] Running Current Well Ingestion Tests...")
     test_pdf_extraction()
     test_csv_extraction()
     test_las_extraction()
     test_completeness_scoring()
     test_profile_merger()
 
-    print("\n[3/5] Running Spatial & Offset Intelligence Tests...")
+    print("\n[3/8] Running Spatial & Offset Intelligence Tests...")
     test_haversine_distance()
     test_nearby_wells()
     test_offset_relevance_engine()
     test_lookahead_corridor()
     test_memory_gaps_and_conflicts()
 
-    print("\n[4/5] Running Physics-Informed Indicators & MCM Tests...")
+    print("\n[4/8] Running Physics-Informed Indicators & MCM Trajectory Tests...")
     test_mse_calculation()
     test_physics_evaluation()
     test_minimum_curvature_method()
     test_unit_conversions()
 
-    print("\n[5/5] Running Alerts, Evidence, PDF Reports, and RAG Tests...")
+    print("\n[5/8] Running Alerts, Evidence Trails & PDF Report Generation Tests...")
     test_alerts_and_evidence()
     test_pdf_report_generation()
     test_rag_assistant_grounded_response()
 
-    print("\n" + "=" * 65)
-    print("  ALL 20 TEST CASES PASSED WITH 100% SUCCESS!")
-    print("=" * 65)
+    print("\n[6/8] Running Local Embeddings (bge-small-en-v1.5) & pgvector RAG Security Tests...")
+    test_embedding_dimensions()
+    test_pgvector_similarity_search()
+    setup_private_test_documents()
+    test_cross_user_rag_isolation()
+    test_prompt_injection_resistance()
+
+    print("\n[7/8] Running Multi-Turn Chat Memory & Conversation Isolation Tests...")
+    asyncio.run(run_chat_memory_tests())
+
+    print("\n[8/8] Running Groq LLM Integration & Security Verification Tests...")
+    asyncio.run(run_all_groq_tests())
+
+    print("\n" + "=" * 70)
+    print("  ALL 34 TEST CASES PASSED WITH 100% SUCCESS ACROSS ALL 8 SUITES!")
+    print("=" * 70)
 
 if __name__ == "__main__":
     run_all()
+

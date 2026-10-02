@@ -1,6 +1,18 @@
 import logging
 import sys
 
+# Configure UTF-8 encoding on standard streams to prevent Windows charmap / cp1252 errors
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 def setup_logger(name: str = "PetroNexus") -> logging.Logger:
     logger = logging.getLogger(name)
     if not logger.handlers:
@@ -15,3 +27,4 @@ def setup_logger(name: str = "PetroNexus") -> logging.Logger:
     return logger
 
 logger = setup_logger()
+

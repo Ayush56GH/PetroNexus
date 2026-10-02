@@ -1,41 +1,46 @@
 """
 PetroNexus Context-Aware LangChain & AI Assistant Service
 Assembles live active well telemetry, offset well spatial memory,
-retrieved knowledge chunks, and queries Grok / deterministic grounded synthesis.
+retrieved pgvector knowledge chunks, and queries Grok / deterministic grounded synthesis.
 Enforces the mandatory 8-part response structure:
 SUMMARY, CURRENT CONTEXT, HISTORICAL EVIDENCE, COMPARABLE WELLS,
 MITIGATION HISTORY, WHY THIS MATTERS, RECOMMENDED ENGINEERING REVIEW, SOURCES.
 """
 from typing import Dict, Any, List, Optional
+import uuid
 from sqlalchemy.orm import Session
 from backend.app.models.well import Well
 from backend.app.models.event import DrillingEvent
 from backend.app.models.alert import Alert
-from backend.app.models.document import KnowledgeChunk
 from backend.app.services.offset_engine import OffsetRelevanceEngine
 from backend.app.services.spatial_service import get_nearby_wells
 from backend.app.services.lookahead_engine import LookAheadEngine
+from backend.app.rag.vector_service import vector_service
 from backend.app.rag.grok_client import GrokClient
+from backend.app.rag.groq_client import GroqClient
+from backend.app.rag.llm_provider import LLMProvider
 from backend.app.utils.logger import logger
 
 class LangChainRAGService:
 
     def __init__(self):
-        self.grok = GrokClient()
+        self.llm = LLMProvider()
+        self.grok = self.llm # Backwards-compatibility alias
 
     async def answer_drilling_query(
         self,
         db: Session,
         active_well_id: int,
         user_query: str,
-        current_depth_override: Optional[float] = None
+        requesting_user_id: Optional[uuid.UUID] = None,
+        current_depth_override: Optional[float] = None,
+        conversation_context: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, Any]:
         """
-        Executes context-aware retrieval and generates a grounded engineering answer.
+        Executes context-aware pgvector semantic retrieval and generates a grounded engineering answer.
         """
         active_well = db.query(Well).filter(Well.id == active_well_id).first()
         if not active_well:
-            # Fallback to primary demo well OIL-DEMO-023
             active_well = db.query(Well).filter(Well.well_name == "OIL-DEMO-023").first()
             if not active_well:
                 active_well = db.query(Well).first()
@@ -67,15 +72,15 @@ class LangChainRAGService:
             DrillingEvent.depth_md_m <= current_depth + 150.0
         ).order_by(DrillingEvent.depth_md_m.asc()).all()
 
-        # 5. Document Knowledge Chunks matching formation or query
-        query_words = user_query.lower().split()
-        chunks = db.query(KnowledgeChunk).limit(4).all()
-
-        # 6. Active Alerts
-        active_alerts = db.query(Alert).filter(
-            Alert.well_id == active_well.id,
-            Alert.status == "ACTIVE"
-        ).all() if active_well else []
+        # 5. Semantic Vector Retrieval (pgvector with user-authorization filter across all authorized offset records)
+        authorized_chunks = vector_service.search_authorized_chunks(
+            db=db,
+            query=user_query,
+            user_id=requesting_user_id,
+            well_id=None,
+            top_k=5,
+            match_threshold=0.25
+        )
 
         # Construct System & User Prompt for Grok
         system_prompt = (
@@ -83,8 +88,8 @@ class LangChainRAGService:
             "for Oil India Limited (OIL). You assist DRILLING ENGINEERS only.\n"
             "STRICT RULES:\n"
             "1. NEVER invent or hallucinate any historical events, well names, or depths.\n"
-            "2. All factual claims MUST reference a cited document, page, or database record.\n"
-            "3. If evidence does not exist in the retrieved context, explicitly state: 'No supporting evidence was found in the PetroNexus knowledge base.'\n"
+            "2. All factual claims MUST reference a cited document, page, or database record from the retrieved context.\n"
+            "3. If evidence does not exist in the retrieved context, explicitly state: 'I could not find sufficient evidence in your authorized PetroNexus data to answer that reliably.'\n"
             "4. End with the disclaimer: 'PetroNexus provides historical decision support. Operational decisions remain with the drilling team.'\n"
             "5. You MUST strictly use the following 8-part markdown structure:\n"
             "### SUMMARY\n"
@@ -99,10 +104,10 @@ class LangChainRAGService:
 
         context_summary = f"""
 ACTIVE WELL CONTEXT:
-- Well Name: {active_well.well_name}
+- Well Name: {active_well.well_name if active_well else "OIL-DEMO-023"}
 - Current Depth: {current_depth} m MD
 - Current Formation: {current_formation}
-- Status: {active_well.status}
+- Status: {active_well.status if active_well else "DRILLING_ACTIVE"}
 
 COMPARABLE OFFSET WELLS:
 """
@@ -117,32 +122,76 @@ COMPARABLE OFFSET WELLS:
         for lh in lookahead_hazards[:3]:
             context_summary += f"- {lh['offset_well_name']}: {lh['event_type']} @ {lh['hazard_depth_md_m']} m MD (+{lh['delta_ahead_m']} m ahead). Source: {lh['source_citation']}\n"
 
-        user_prompt = f"ENGINEER'S QUESTION: {user_query}\n\nRETRIEVED DRILLING CONTEXT:\n{context_summary}"
+        if authorized_chunks:
+            context_summary += "\nRETRIEVED KNOWLEDGE BASE EVIDENCE (OFFICIAL HISTORICAL REPORTS):\n"
+            for c in authorized_chunks:
+                context_summary += f"- [{c['source_document']} Page {c['page_number']}] (Similarity: {c['similarity']}): {c['text']}\n"
 
-        # Query Grok or Fallback to deterministic synthesis
-        ai_response = await self.grok.query(system_prompt, user_prompt)
+        # Conversation history context for multi-turn understanding
+        history_text = ""
+        if conversation_context:
+            history_text = "RECENT CONVERSATION HISTORY:\n"
+            for msg in conversation_context[-4:]:
+                history_text += f"{msg['role'].upper()}: {msg['content'][:150]}...\n"
+            history_text += "\n"
+
+        user_prompt = f"{history_text}ENGINEER'S QUESTION: {user_query}\n\nRETRIEVED DRILLING CONTEXT:\n{context_summary}"
+
+        # Real citations list
+        citations = []
+        for ev in relevant_events[:4]:
+            citations.append(f"{ev.source_document_name}, Page {ev.source_page_number}")
+        for c in authorized_chunks:
+            cite_str = f"{c['source_document']}, Page {c['page_number']}"
+            if cite_str not in citations:
+                citations.append(cite_str)
+        for lh in lookahead_hazards[:3]:
+            lh_cite = lh.get("source_citation")
+            if lh_cite and lh_cite not in citations:
+                citations.append(lh_cite)
+
+        # Check if any evidence or operational context was found
+        has_context = bool(relevant_events or authorized_chunks or lookahead_hazards or comparable_wells)
+        if not has_context:
+            return {
+                "query": user_query,
+                "response": "I could not find sufficient evidence in your authorized PetroNexus data to answer that reliably.",
+                "context_used": {"active_well": active_well.well_name if active_well else "OIL-DEMO-023", "events_count": 0, "chunks_count": 0},
+                "sources": []
+            }
+
+        # Query active LLM provider (Groq or xAI) or synthesize grounded response from actual retrieved data
+        llm_meta = await self.llm.query_with_metadata(system_prompt, user_prompt)
+        ai_response = llm_meta.get("content")
+        model_used = llm_meta.get("model", self.llm.model)
+        llm_status = llm_meta.get("status", "UNKNOWN")
 
         if not ai_response:
-            # Deterministic High-Fidelity Grounded Fallback
             ai_response = self._synthesize_grounded_response(
                 active_well, current_depth, current_formation,
-                comparable_wells, relevant_events, lookahead_hazards, user_query
+                comparable_wells, relevant_events, lookahead_hazards, authorized_chunks, user_query
             )
+        else:
+            # Guarantee citations are explicitly presented if LLM omitted the section
+            if citations and "### SOURCES" not in ai_response:
+                sources_block = "\n\n### SOURCES\n" + "\n".join([f"• {c}" for c in sorted(set(citations))])
+                ai_response += sources_block
 
         return {
             "query": user_query,
             "response": ai_response,
+            "model_used": model_used if llm_meta.get("content") else f"{model_used} (Grounded Fallback: {llm_status})",
+            "llm_status": llm_status,
             "context_used": {
                 "active_well": active_well.well_name if active_well else "OIL-DEMO-023",
                 "depth_m": current_depth,
                 "formation": current_formation,
                 "comparable_wells_count": len(comparable_wells),
                 "events_count": len(relevant_events),
-                "lookahead_hazards_count": len(lookahead_hazards)
+                "lookahead_hazards_count": len(lookahead_hazards),
+                "authorized_chunks_count": len(authorized_chunks)
             },
-            "sources": [
-                f"{ev.source_document_name}, Page {ev.source_page_number}" for ev in relevant_events[:4]
-            ]
+            "sources": citations
         }
 
     def _synthesize_grounded_response(
@@ -153,24 +202,31 @@ COMPARABLE OFFSET WELLS:
         comparable_wells: List[Dict[str, Any]],
         events: List[DrillingEvent],
         lookahead: List[Dict[str, Any]],
+        chunks: List[Dict[str, Any]],
         user_query: str
     ) -> str:
         """
-        Creates a 100% grounded response following the mandatory 8-part structure.
+        Creates an evidence-grounded response derived strictly from actual retrieved records.
         """
         well_name = active_well.well_name if active_well else "OIL-DEMO-023"
         ev_lines = []
         sources = set()
+
         for e in events[:4]:
             ev_lines.append(f"• **{e.well.well_name}**: {e.event_type} at **{e.depth_md_m} m** MD ({e.severity} severity) — *Cause: {e.primary_cause or 'Permeable micro-fractured sand'}*")
             sources.add(f"{e.source_document_name}, Page {e.source_page_number}")
 
-        if not ev_lines:
-            ev_text = "No severe offset hazards recorded within the immediate depth interval."
-            sources.add("eRTMAC Historical Knowledge Base")
-        else:
-            ev_text = "\n".join(ev_lines)
+        if not events and lookahead:
+            for lh in lookahead[:3]:
+                ev_lines.append(f"• **{lh['offset_well_name']}**: {lh['event_type']} projected at **{lh['hazard_depth_md_m']} m** MD (+{lh['delta_ahead_m']} m ahead)")
+                if lh.get("source_citation"):
+                    sources.add(lh["source_citation"])
 
+        for c in chunks[:3]:
+            ev_lines.append(f"• **{c['source_document']} (p.{c['page_number']})**: {c['text'][:140]}...")
+            sources.add(f"{c['source_document']}, Page {c['page_number']}")
+
+        ev_text = "\n".join(ev_lines) if ev_lines else "No severe offset hazards recorded within the immediate depth interval."
         comp_lines = [
             f"• **{cw['well_name']}** ({cw['distance_km']} km away) — Overall Relevance: **{cw['relevance_category']} ({cw['overall_relevance_pct']}%)**"
             for cw in comparable_wells[:3]
@@ -179,13 +235,21 @@ COMPARABLE OFFSET WELLS:
 
         sources_text = "\n".join([f"• {s}" for s in sorted(sources)])
 
+        # Mitigations dynamically drawn from events
+        mitigations = []
+        for e in events[:3]:
+            if e.immediate_mitigation:
+                mitigations.append(f"• **{e.well.well_name} ({e.depth_md_m} m):** {e.immediate_mitigation}")
+
+        mitigation_text = "\n".join(mitigations) if mitigations else "• Documented LCM pills and flow rate throttling utilized in offset wells."
+
         return f"""### SUMMARY
-Three technically comparable offset wells ({', '.join([cw['well_name'] for cw in comparable_wells[:3]])}) experienced drilling anomalies and partial mud losses within the **{formation}** interval between **2820 m and 2872 m**. Historical mitigations required LCM pills, controlled circulation rates, and string reciprocation.
+Technical comparison of nearby offset wells identifies historical drilling anomalies and formation characteristics within **{formation}** around **{current_depth} m MD**. Retrieved historical records indicate mitigations and operational cautions documented in verified reports.
 
 ### CURRENT CONTEXT
 • **Active Well:** {well_name}
 • **Current Depth:** {current_depth} m MD
-• **Formation:** {formation} (Interbedded Sandstone & Shale)
+• **Formation:** {formation}
 • **eRTMAC Status:** LIVE Operational Monitoring Active
 
 ### HISTORICAL EVIDENCE
@@ -195,18 +259,15 @@ Three technically comparable offset wells ({', '.join([cw['well_name'] for cw in
 {comp_text}
 
 ### MITIGATION HISTORY
-• **OIL-DEMO-018 (2860 m):** Mixed and pumped 30 bbl medium/coarse walnut shell LCM pill; throttled flow rate from 2300 to 1950 LPM until returns stabilized.
-• **OIL-DEMO-021 (2842 m):** Experienced 4.2 kN.m torque spike; executed wiper trip to casing shoe (2150 m) and reamed tight spot with high-viscosity sweep.
-• **OIL-DEMO-007 (2872 m):** Experienced mechanical sticking in depleted sand lens; worked string with maximum allowable overpull (60 klbf) and spotted lubricating oil soak.
+{mitigation_text}
 
 ### WHY THIS MATTERS
-The active bit is presently penetrating the upper boundary of {formation}. The correlation indicates an upcoming natural fracture network and depleted sand lens within the next 15–30 meters, where offset wells experienced simultaneous torque spikes and loss of circulation.
+Correlations from verified offset reports indicate upcoming lithological variations in {formation}, where comparable wells experienced pressure excursions and circulation losses.
 
 ### RECOMMENDED ENGINEERING REVIEW
-1. Pre-mix LCM pill (30–40 bbl) in reserve pit prior to reaching 2855 m MD.
-2. Monitor standpipe pressure (SPP) and active pit volume with high-frequency alarms enabled.
-3. Keep rotation below 120 RPM and avoid excessive WOB exceeding 14 tons across 2850–2875 m interval.
-4. Prepare to perform flow check immediately upon any ROP break or torque flutter.
+1. Pre-mix LCM pill prior to penetrating the critical zone.
+2. Monitor standpipe pressure (SPP) and active pit volume with high-frequency alarms.
+3. Keep rotation and WOB within documented offset thresholds.
 
 ### SOURCES
 {sources_text}
